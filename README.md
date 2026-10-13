@@ -11,6 +11,7 @@ When Codex CLI stops a task because the selected model is at capacity, this watc
 - Sends the follow-up with `codex queue --thread <session-id> --message continue`, targeting the session that encountered the error.
 - Monitors terminal CLI sessions by default and sends one message per failed turn.
 - Persists processed file offsets and queued events so restarting the watcher does not resend messages.
+- Writes a PID file so a running watcher can be stopped with `--stop`.
 - Can recover sessions that were still stopped by a recent capacity error when the watcher starts.
 
 ## Requirements
@@ -33,6 +34,7 @@ Default configuration:
 | --- | --- |
 | Codex home | `$CODEX_HOME`, or `~/.codex` when unset |
 | State file | `$CODEX_HOME/capacity-watcher-state.json` |
+| PID file | `capacity-watcher.pid` next to the state file |
 | Codex executable | `$CODEX_BIN`, or `codex` when unset |
 | Follow-up message | `continue` |
 | Poll interval | 2 seconds |
@@ -41,6 +43,18 @@ Preview what would be sent without calling `codex queue`:
 
 ```bash
 python3 scripts/codex_capacity_watcher.py --dry-run --once
+```
+
+Stop a watcher that is already running:
+
+```bash
+python3 scripts/codex_capacity_watcher.py --stop
+```
+
+If the watcher was started with a custom PID file, pass the same path when stopping it:
+
+```bash
+python3 scripts/codex_capacity_watcher.py --stop --pid-file /path/to/capacity-watcher.pid
 ```
 
 Recover sessions that have remained in a capacity-error state during the last six hours when the watcher starts:
@@ -71,7 +85,7 @@ python3 scripts/codex_capacity_watcher.py --help
 
 The watcher stores the read offset for each rollout file and records queued events in its state file. When it detects a new capacity error, it extracts the session ID and turn ID, then calls `codex queue` to send the follow-up to the original session. Failed sends are not marked as processed, so a later scan can retry them.
 
-`--recover` inspects existing history once at startup. After that, the watcher starts following new events from the end of each rollout file. Use `--state-file` to store state in a different location.
+The watcher records its process ID in the PID file while it is running. `--stop` sends that process a graceful `SIGTERM`; the watcher cleans up the PID file before exiting. If no valid PID file exists, `--stop` also looks for Python processes running this script, which allows it to stop watchers created by older versions. `--recover` inspects existing history once at startup. After that, the watcher starts following new events from the end of each rollout file. Use `--state-file` and `--pid-file` to store state and process metadata in different locations.
 
 ## Tests
 

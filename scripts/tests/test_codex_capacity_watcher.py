@@ -1,11 +1,21 @@
 import json
+import os
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parents[1]))
 
-from codex_capacity_watcher import CapacityEvent, CapacityWatcher, queue_message  # noqa: E402
+import codex_capacity_watcher as watcher_module  # noqa: E402
+from codex_capacity_watcher import (  # noqa: E402
+    CapacityEvent,
+    CapacityWatcher,
+    _acquire_pid_file,
+    _parser,
+    _release_pid_file,
+    queue_message,
+    stop_watcher,
+)
 
 
 MESSAGE = "Selected model is at capacity. Please try a different model."
@@ -223,8 +233,6 @@ def test_queue_message_targets_the_session_and_sends_continue(tmp_path):
         thread_source="user",
         originator="codex-tui",
     )
-    import os
-
     previous = os.environ.get("CODEX_WATCHER_ARGS")
     os.environ["CODEX_WATCHER_ARGS"] = str(output)
     try:
@@ -241,3 +249,37 @@ def test_queue_message_targets_the_session_and_sends_continue(tmp_path):
         "--message",
         "continue",
     ]
+
+
+def test_pid_file_prevents_duplicate_watchers_and_can_be_released(tmp_path):
+    pid_file = tmp_path / "capacity-watcher.pid"
+    pid = _acquire_pid_file(pid_file)
+    try:
+        assert int(pid_file.read_text(encoding="utf-8")) == pid
+        try:
+            _acquire_pid_file(pid_file)
+        except RuntimeError as error:
+            assert str(pid) in str(error)
+        else:
+            raise AssertionError("a second watcher should not acquire the PID file")
+    finally:
+        _release_pid_file(pid_file, pid)
+    assert not pid_file.exists()
+
+
+def test_stop_watcher_removes_stale_pid_file(tmp_path, monkeypatch):
+    pid_file = tmp_path / "capacity-watcher.pid"
+    pid_file.write_text("999999999\n", encoding="utf-8")
+    monkeypatch.setattr(watcher_module, "_discover_watcher_pids", lambda: ())
+
+    assert stop_watcher(pid_file) == 0
+    assert not pid_file.exists()
+
+
+def test_stop_option_and_custom_pid_file_are_parsed(tmp_path):
+    pid_file = tmp_path / "custom.pid"
+
+    args = _parser().parse_args(["--stop", "--pid-file", str(pid_file)])
+
+    assert args.stop is True
+    assert args.pid_file == pid_file

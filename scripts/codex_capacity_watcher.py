@@ -12,9 +12,12 @@ import argparse
 import json
 import os
 import re
+import shlex
+import signal
 import subprocess
 import sys
 import tempfile
+import threading
 import time
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
@@ -268,6 +271,135 @@ def _save_state(path: Path, state: dict) -> None:
             os.unlink(temporary)
 
 
+def _default_pid_file(state_file: Path) -> Path:
+    return state_file.with_name("capacity-watcher.pid")
+
+
+def _read_pid(path: Path) -> int | None:
+    try:
+        value = int(path.read_text(encoding="utf-8").strip())
+    except (OSError, ValueError):
+        return None
+    return value if value > 0 else None
+
+
+def _pid_is_running(pid: int) -> bool:
+    try:
+        os.kill(pid, 0)
+    except ProcessLookupError:
+        return False
+    except PermissionError:
+        return True
+    except OSError:
+        return False
+    return True
+
+
+def _acquire_pid_file(path: Path) -> int:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    pid = os.getpid()
+    for _ in range(2):
+        try:
+            descriptor = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o644)
+        except FileExistsError:
+            existing = _read_pid(path)
+            if existing is not None and _pid_is_running(existing):
+                raise RuntimeError(f"watcher is already running with PID {existing}")
+            try:
+                path.unlink()
+            except FileNotFoundError:
+                pass
+            continue
+        with os.fdopen(descriptor, "w", encoding="utf-8") as stream:
+            stream.write(f"{pid}\n")
+        return pid
+    raise RuntimeError(f"could not acquire PID file: {path}")
+
+
+def _release_pid_file(path: Path, pid: int) -> None:
+    if _read_pid(path) != pid:
+        return
+    try:
+        path.unlink()
+    except FileNotFoundError:
+        pass
+
+
+def _discover_watcher_pids() -> tuple[int, ...]:
+    """Find watcher processes started before PID-file support was added."""
+    try:
+        result = subprocess.run(
+            ["ps", "-axo", "pid=,comm=,args="],
+            check=False,
+            capture_output=True,
+            text=True,
+            timeout=5,
+        )
+    except (OSError, subprocess.SubprocessError):
+        return ()
+    if result.returncode:
+        return ()
+    pids: set[int] = set()
+    for line in result.stdout.splitlines():
+        parts = line.strip().split(None, 2)
+        if len(parts) != 3:
+            continue
+        try:
+            pid = int(parts[0])
+            command = shlex.split(parts[2])
+        except (ValueError, TypeError):
+            continue
+        if pid == os.getpid() or not command:
+            continue
+        executable = Path(command[0]).name.lower()
+        if "python" not in executable:
+            continue
+        if not any(Path(argument).name == "codex_capacity_watcher.py" for argument in command):
+            continue
+        pids.add(pid)
+    return tuple(sorted(pids))
+
+
+def _send_stop_signal(pid: int) -> bool | None:
+    try:
+        os.kill(pid, signal.SIGTERM)
+    except ProcessLookupError:
+        return False
+    except PermissionError as error:
+        print(f"[watcher] cannot stop PID {pid}: {error}", file=sys.stderr, flush=True)
+        return None
+    print(f"[watcher] stop requested for PID {pid}", flush=True)
+    return True
+
+
+def stop_watcher(pid_file: Path) -> int:
+    pid = _read_pid(pid_file)
+    if pid is None:
+        try:
+            pid_file.unlink()
+        except FileNotFoundError:
+            pass
+    else:
+        if not _pid_is_running(pid):
+            _release_pid_file(pid_file, pid)
+            print(f"[watcher] removed stale PID file: {pid_file}", flush=True)
+        else:
+            result = _send_stop_signal(pid)
+            if result is True:
+                return 0
+            if result is None:
+                return 1
+            _release_pid_file(pid_file, pid)
+
+    legacy_pids = _discover_watcher_pids()
+    if legacy_pids:
+        results = [_send_stop_signal(legacy_pid) for legacy_pid in legacy_pids]
+        return 1 if any(result is None for result in results) else 0
+    if pid is None:
+        print(f"[watcher] no running watcher found (PID file: {pid_file})", flush=True)
+    return 0
+
+
 class CapacityWatcher:
     """Poll rollout files and queue one follow-up per failed turn."""
 
@@ -432,6 +564,7 @@ def _parser() -> argparse.ArgumentParser:
     default_home = Path(os.environ.get("CODEX_HOME", Path.home() / ".codex"))
     parser.add_argument("--codex-home", type=Path, default=default_home)
     parser.add_argument("--state-file", type=Path, default=default_home / "capacity-watcher-state.json")
+    parser.add_argument("--pid-file", type=Path, help="PID file used to start or stop the watcher")
     parser.add_argument("--codex", default=os.environ.get("CODEX_BIN", "codex"))
     parser.add_argument("--message", default="continue")
     parser.add_argument("--interval", type=float, default=2.0)
@@ -445,11 +578,17 @@ def _parser() -> argparse.ArgumentParser:
     )
     parser.add_argument("--dry-run", action="store_true", help="只打印，不调用 codex queue")
     parser.add_argument("--once", action="store_true", help="扫描一次后退出")
+    parser.add_argument("--stop", action="store_true", help="停止已运行的监控进程")
     return parser
 
 
 def main(argv: list[str] | None = None) -> int:
     args = _parser().parse_args(argv)
+    pid_file = args.pid_file or _default_pid_file(args.state_file)
+    if args.stop:
+        if args.once:
+            raise SystemExit("--stop 不能与 --once 同时使用")
+        return stop_watcher(pid_file)
     if args.interval <= 0 or args.recover_hours <= 0:
         raise SystemExit("--interval 和 --recover-hours 必须大于 0")
     send = (
@@ -468,21 +607,41 @@ def main(argv: list[str] | None = None) -> int:
         terminal_only=not args.all_sessions,
         terminal_cwd_provider=None if args.all_sessions else discover_terminal_cwds,
     )
-    mode = "terminal CLI" if not args.all_sessions else "all sessions"
-    print(
-        f"[watcher] started: {mode}, interval={args.interval:g}s, "
-        f"state={args.state_file}",
-        flush=True,
-    )
-    while True:
+    if args.once:
         watcher.scan()
-        if args.once:
-            return 0
-        try:
-            time.sleep(args.interval)
-        except KeyboardInterrupt:
-            print("\n[watcher] stopped", flush=True)
-            return 0
+        return 0
+
+    try:
+        pid = _acquire_pid_file(pid_file)
+    except (OSError, RuntimeError) as error:
+        print(f"[watcher] cannot start: {error}", file=sys.stderr, flush=True)
+        return 1
+    stop_requested = threading.Event()
+
+    def request_stop(_signum: int, _frame: object) -> None:
+        stop_requested.set()
+
+    signal.signal(signal.SIGTERM, request_stop)
+    try:
+        mode = "terminal CLI" if not args.all_sessions else "all sessions"
+        print(
+            f"[watcher] started: {mode}, interval={args.interval:g}s, "
+            f"state={args.state_file}, pid={pid}",
+            flush=True,
+        )
+        while not stop_requested.is_set():
+            watcher.scan()
+            if stop_requested.is_set():
+                break
+            try:
+                stop_requested.wait(args.interval)
+            except KeyboardInterrupt:
+                print("\n[watcher] stopped", flush=True)
+                return 0
+        print("[watcher] stopped", flush=True)
+        return 0
+    finally:
+        _release_pid_file(pid_file, pid)
 
 
 if __name__ == "__main__":
