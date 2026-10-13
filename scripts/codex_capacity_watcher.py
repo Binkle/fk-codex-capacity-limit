@@ -431,6 +431,10 @@ class CapacityWatcher:
         self._dry_run_seen: set[str] = set()
         self._bootstrapped = bool(self.state["files"])
         self._recovery_checked = not recover
+        # A normal restart follows only events written after it starts.  Any
+        # bytes appended while the previous process was stopped are history;
+        # ``--recover`` is the explicit opt-in for inspecting that history.
+        self._startup_synced = not self._bootstrapped or recover
 
     def scan(self) -> int:
         if self.terminal_cwd_provider:
@@ -440,12 +444,24 @@ class CapacityWatcher:
             sent = self._bootstrap(paths)
             self._bootstrapped = True
             self._recovery_checked = True
+            self._startup_synced = True
             self._persist_state()
             return sent
+        if not self.recover and not self._startup_synced:
+            self._sync_to_current_end(paths)
+            self._startup_synced = True
+            self._persist_state()
+            return 0
         sent = 0
         if self.recover and not self._recovery_checked:
             sent += self._recover_existing(paths)
             self._recovery_checked = True
+            # Recovery handled history explicitly.  Begin live polling at
+            # the current end so the normal scan cannot replay it again.
+            self._sync_to_current_end(paths)
+            self._startup_synced = True
+            self._persist_state()
+            return sent
         for path in paths:
             sent += self._scan_path(path)
         self._persist_state()
@@ -464,6 +480,18 @@ class CapacityWatcher:
             if event:
                 sent += self._handle(event)
         return sent
+
+    def _sync_to_current_end(self, paths: tuple[Path, ...]) -> None:
+        """Set all discovered rollout offsets to their current end."""
+        for path in paths:
+            signature = _file_signature(path)
+            if signature is None:
+                continue
+            self.state["files"][str(path)] = {
+                "offset": signature[0],
+                "size": signature[0],
+                "mtime_ns": signature[1],
+            }
 
     def _bootstrap(self, paths: tuple[Path, ...]) -> int:
         sent = 0

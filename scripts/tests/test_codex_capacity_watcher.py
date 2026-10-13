@@ -164,6 +164,28 @@ def test_recover_existing_state_catches_unqueued_latest_event(tmp_path):
     assert [event.turn_id for event in recovered] == ["turn-8b"]
 
 
+def test_restart_skips_events_written_while_stopped_by_default(tmp_path):
+    home = tmp_path / "codex"
+    session = "00000000-0000-0000-0000-000000000012"
+    path = _rollout(home, session, [_meta(session)])
+    state = tmp_path / "state.json"
+
+    first = _watcher(home, state, [])
+    assert first.scan() == 0
+    with path.open("ab") as stream:
+        stream.write(_line(_complete(session, "turn-12a")))
+
+    restarted_sent = []
+    restarted = _watcher(home, state, restarted_sent)
+    assert restarted.scan() == 0
+    assert restarted_sent == []
+
+    with path.open("ab") as stream:
+        stream.write(_line(_complete(session, "turn-12b")))
+    assert restarted.scan() == 1
+    assert [event.turn_id for event in restarted_sent] == ["turn-12b"]
+
+
 def test_subagent_is_ignored_by_default(tmp_path):
     home = tmp_path / "codex"
     session = "00000000-0000-0000-0000-000000000005"

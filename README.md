@@ -85,7 +85,7 @@ python3 scripts/codex_capacity_watcher.py --help
 
 The watcher stores the read offset for each rollout file and records queued events in its state file. When it detects a new capacity error, it extracts the session ID and turn ID, then calls `codex queue` to send the follow-up to the original session. Failed sends are not marked as processed, so a later scan can retry them.
 
-The watcher records its process ID in the PID file while it is running. `--stop` sends that process a graceful `SIGTERM`; the watcher cleans up the PID file before exiting. If no valid PID file exists, `--stop` also looks for Python processes running this script, which allows it to stop watchers created by older versions. `--recover` inspects existing history once at startup. After that, the watcher starts following new events from the end of each rollout file. Use `--state-file` and `--pid-file` to store state and process metadata in different locations.
+The watcher records its process ID in the PID file while it is running. `--stop` sends that process a graceful `SIGTERM`; the watcher cleans up the PID file before exiting. If no valid PID file exists, `--stop` also looks for Python processes running this script, which allows it to stop watchers created by older versions. A normal restart skips events appended while the watcher was stopped and begins at the current end of each rollout file. Use `--recover` to inspect existing history once at startup; after that recovery pass, the watcher follows only new events. Use `--state-file` and `--pid-file` to store state and process metadata in different locations.
 
 ## Tests
 
