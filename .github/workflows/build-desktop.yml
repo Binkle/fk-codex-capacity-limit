@@ -38,7 +38,24 @@ jobs:
 
       - name: Build Windows installer
         if: runner.os == 'Windows'
-        run: cmd /c packaging\build-windows.bat
+        shell: cmd
+        run: |
+          if not exist dist mkdir dist
+          call packaging\build-windows.bat > dist\windows-build.log 2>&1
+          set "BUILD_EXIT=%ERRORLEVEL%"
+          type dist\windows-build.log
+          exit /b %BUILD_EXIT%
+
+      - name: Upload Windows build diagnostics
+        if: always() && runner.os == 'Windows'
+        uses: actions/upload-artifact@v4
+        with:
+          name: CodexCapacityWatcher-windows-diagnostics
+          path: |
+            dist/windows-build.log
+            dist/CodexCapacityWatcher.exe
+            dist/CodexCapacityWatcher-Setup.exe
+          if-no-files-found: ignore
 
       - name: Upload macOS application
         if: runner.os == 'macOS'

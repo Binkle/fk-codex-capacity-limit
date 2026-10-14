@@ -1,6 +1,7 @@
 @echo off
 setlocal
 cd /d "%~dp0\.."
+echo [build] Working directory: %CD%
 
 where python >nul 2>&1
 if errorlevel 1 (
@@ -8,12 +9,14 @@ if errorlevel 1 (
   exit /b 1
 )
 python --version
+echo [build] Checking Python build dependencies
 python -c "import PyInstaller, PySide6" >nul 2>&1
 if errorlevel 1 python -m pip install --upgrade pyinstaller PySide6
 if errorlevel 1 (
   echo Failed to install Python build dependencies.
   exit /b 1
 )
+echo [build] Running PyInstaller
 python -m PyInstaller ^
   --noconfirm ^
   --clean ^
@@ -32,6 +35,7 @@ if not exist "dist\CodexCapacityWatcher.exe" (
   echo PyInstaller completed without creating dist\CodexCapacityWatcher.exe.
   exit /b 1
 )
+echo [build] PyInstaller output is present
 
 set "MAKENSIS=%ProgramFiles(x86)%\NSIS\makensis.exe"
 if not exist "%MAKENSIS%" set "MAKENSIS=%ProgramFiles%\NSIS\makensis.exe"
@@ -41,7 +45,15 @@ if not exist "%MAKENSIS%" (
   exit /b 1
 )
 echo Using NSIS: %MAKENSIS%
+echo [build] Running NSIS installer compiler
 "%MAKENSIS%" packaging\windows-installer.nsi
-if errorlevel 1 exit /b 1
+if errorlevel 1 (
+  echo NSIS failed to build the installer.
+  exit /b 1
+)
+if not exist "dist\CodexCapacityWatcher-Setup.exe" (
+  echo NSIS completed without creating dist\CodexCapacityWatcher-Setup.exe.
+  exit /b 1
+)
 
 echo Built dist\CodexCapacityWatcher-Setup.exe
