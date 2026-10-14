@@ -312,7 +312,7 @@ def default_settings() -> dict[str, Any]:
         "interval": "2",
         "recover_hours": "6",
         "recover": False,
-        "all_sessions": False,
+        "all_sessions": True,
         "include_subagents": False,
         "dry_run": False,
     }
