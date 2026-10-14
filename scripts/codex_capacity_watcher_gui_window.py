@@ -172,6 +172,10 @@ class CapacityWatcherWindow(QMainWindow):
         self.tray_show_action.triggered.connect(self._restore_window)
         self.tray_menu.addAction(self.tray_show_action)
         self.tray_menu.addSeparator()
+        self.tray_toggle_action = QAction(self.t("tray.start"), self)
+        self.tray_toggle_action.triggered.connect(self._toggle_watcher)
+        self.tray_menu.addAction(self.tray_toggle_action)
+        self.tray_menu.addSeparator()
         self.tray_quit_action = QAction(self.t("tray.quit"), self)
         self.tray_quit_action.triggered.connect(self._quit_from_tray)
         self.tray_menu.addAction(self.tray_quit_action)
@@ -179,12 +183,16 @@ class CapacityWatcherWindow(QMainWindow):
         self.tray_icon.activated.connect(self._tray_activated)
         if QSystemTrayIcon.isSystemTrayAvailable():
             self.tray_icon.show()
+        self._update_tray_text()
 
     def _update_tray_text(self) -> None:
         if not hasattr(self, "tray_icon"):
             return
         self.tray_icon.setToolTip(self.t("tray.tooltip"))
         self.tray_show_action.setText(self.t("tray.show"))
+        state = self.status.property("state") if hasattr(self, "status") else "idle"
+        self.tray_toggle_action.setText(self.t("tray.stop" if state == "running" else "tray.start"))
+        self.tray_toggle_action.setEnabled(self.stop_process is None)
         self.tray_quit_action.setText(self.t("tray.quit"))
 
     def _restore_window(self) -> None:
@@ -396,6 +404,7 @@ class CapacityWatcherWindow(QMainWindow):
             button_style = self.toggle_button.style()
             button_style.unpolish(self.toggle_button)
             button_style.polish(self.toggle_button)
+        self._update_tray_text()
 
     def _watcher_finished(self, exit_code: int, _status: QProcess.ExitStatus) -> None:
         if self.process is not None:
