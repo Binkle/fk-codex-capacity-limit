@@ -35,6 +35,13 @@ jobs:
           --name CodexCapacityWatcher --hidden-import codex_capacity_watcher
           scripts/codex_capacity_watcher_gui.py
 
+      - name: Package macOS application with symlinks preserved
+        if: runner.os == 'macOS'
+        run: >-
+          ditto -c -k --sequesterRsrc --keepParent
+          dist/CodexCapacityWatcher.app
+          dist/CodexCapacityWatcher-macos.zip
+
       - name: Build Windows application
         if: runner.os == 'Windows'
         run: >-
@@ -47,7 +54,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.artifact }}
-          path: dist/CodexCapacityWatcher.app
+          path: dist/CodexCapacityWatcher-macos.zip
 
       - name: Upload Windows application
         if: runner.os == 'Windows'

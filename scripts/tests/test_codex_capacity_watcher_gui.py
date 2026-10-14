@@ -1,6 +1,7 @@
 import importlib.util
 import json
 import os
+from types import SimpleNamespace
 from pathlib import Path
 
 GUI_PATH = Path(__file__).parents[1] / "codex_capacity_watcher_gui.py"
@@ -8,6 +9,7 @@ SPEC = importlib.util.spec_from_file_location("codex_capacity_watcher_gui", GUI_
 gui = importlib.util.module_from_spec(SPEC)
 assert SPEC.loader is not None
 SPEC.loader.exec_module(gui)
+import codex_capacity_watcher_i18n as i18n
 
 
 def test_watcher_arguments_include_gui_options(tmp_path):
@@ -102,6 +104,20 @@ def test_runtime_path_includes_codex_parent(tmp_path):
     path = gui.runtime_path(str(executable))
 
     assert str(executable.parent) in path.split(os.pathsep)
+
+
+def test_macos_system_language_uses_apple_languages(monkeypatch):
+    monkeypatch.setattr(i18n.sys, "platform", "darwin")
+    monkeypatch.setattr(
+        i18n.subprocess,
+        "run",
+        lambda *args, **kwargs: SimpleNamespace(
+            returncode=0,
+            stdout='(\n    "zh-Hans-CN",\n    "en-US",\n)\n',
+        ),
+    )
+
+    assert i18n.system_language() == "zh-CN"
 
 
 def test_new_defaults_select_all_session_types():

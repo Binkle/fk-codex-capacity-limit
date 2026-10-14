@@ -109,9 +109,11 @@ sh packaging/build-macos.sh
 packaging\build-windows.bat
 ```
 
-macOS 构建结果是 `dist/CodexCapacityWatcher.app`，Windows 构建结果是
-`dist\CodexCapacityWatcher.exe`。PyInstaller 会把 GUI 和监控脚本一起打包，
-使用者不需要再手动运行 Python 脚本。
+macOS 构建结果包括 `dist/CodexCapacityWatcher.app` 和可分发的
+`dist/CodexCapacityWatcher-macos.zip`，Windows 构建结果是
+`dist\CodexCapacityWatcher.exe`。macOS 请优先分发 zip 并在本机解压；它会保留
+Qt/PySide6 所需的符号链接，避免使用普通复制工具后体积膨胀。PyInstaller 会把
+GUI 和监控脚本一起打包，使用者不需要再手动运行 Python 脚本。
 
 仓库还提供了 `.github/workflows/build-desktop.yml`。可以在 GitHub 的
 Actions 页面手动运行它，或者推送 `v*` 标签，生成可下载的 macOS 和

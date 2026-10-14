@@ -4,6 +4,9 @@ from __future__ import annotations
 
 import locale
 import os
+import re
+import subprocess
+import sys
 from typing import Any
 
 
@@ -202,8 +205,43 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
 }
 
 
+def _macos_language() -> str | None:
+    """Read the preferred language list used by macOS System Settings.
+
+    ``locale.getlocale()`` reflects the process environment and may remain
+    English when the user selected Simplified Chinese in System Settings.
+    Apple stores the UI preference in the global ``AppleLanguages`` defaults
+    key, so consult it before the locale fallbacks.
+    """
+    if sys.platform != "darwin":
+        return None
+    try:
+        result = subprocess.run(
+            ["defaults", "read", "-g", "AppleLanguages"],
+            capture_output=True,
+            text=True,
+            check=False,
+            timeout=2,
+        )
+    except (OSError, subprocess.SubprocessError):
+        return None
+    if result.returncode != 0:
+        return None
+    values = re.findall(r'"([^"]+)"', result.stdout)
+    for value in values:
+        normalized = value.lower().replace("_", "-")
+        if normalized.startswith("zh"):
+            return LANGUAGE_ZH
+        if normalized.startswith("en"):
+            return LANGUAGE_EN
+    return None
+
+
 def system_language() -> str:
-    """Map the host locale to one of the two languages we ship."""
+    """Map the host language preference to one of the two shipped languages."""
+    macos_language = _macos_language()
+    if macos_language:
+        return macos_language
     candidates = []
     try:
         language, _encoding = locale.getlocale()

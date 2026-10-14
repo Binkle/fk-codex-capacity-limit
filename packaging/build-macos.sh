@@ -14,4 +14,12 @@ python3 -m PyInstaller \
   --hidden-import codex_capacity_watcher \
   scripts/codex_capacity_watcher_gui.py
 
+# Keep macOS symlinks intact in the distributable archive. Copying the .app
+# with a tool that follows symlinks can expand the Qt/PySide6 payload several
+# times and make a normal build appear to be hundreds of megabytes larger.
+ditto -c -k --sequesterRsrc --keepParent \
+  dist/CodexCapacityWatcher.app \
+  dist/CodexCapacityWatcher-macos.zip
+
 echo "Built dist/CodexCapacityWatcher.app"
+echo "Built dist/CodexCapacityWatcher-macos.zip"

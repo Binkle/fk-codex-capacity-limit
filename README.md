@@ -112,10 +112,12 @@ sh packaging/build-macos.sh
 packaging\build-windows.bat
 ```
 
-The macOS build creates `dist/CodexCapacityWatcher.app`; the Windows build
-creates `dist\CodexCapacityWatcher.exe`. PyInstaller packages the watcher and
-GUI together, so the person using the finished application does not need to
-run the Python script manually.
+The macOS build creates `dist/CodexCapacityWatcher.app` and the distributable
+`dist/CodexCapacityWatcher-macos.zip`; the Windows build creates
+`dist\CodexCapacityWatcher.exe`. Distribute the macOS zip and extract it on
+the target Mac so the Qt/PySide6 symlinks remain intact. PyInstaller packages
+the watcher and GUI together, so the person using the finished application
+does not need to run the Python script manually.
 
 The repository also includes a GitHub Actions workflow at
 `.github/workflows/build-desktop.yml`. Run it manually from the Actions tab, or
