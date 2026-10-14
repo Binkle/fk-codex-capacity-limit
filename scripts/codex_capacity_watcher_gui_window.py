@@ -165,7 +165,9 @@ class CapacityWatcherWindow(QMainWindow):
 
     def _create_tray(self) -> None:
         self.tray_icon = QSystemTrayIcon(self)
-        self.tray_icon.setIcon(self.windowIcon())
+        icon_path = asset_path(APP_ICON_NAME)
+        icon = QIcon(str(icon_path)) if icon_path.is_file() else self.windowIcon()
+        self.tray_icon.setIcon(icon)
         self.tray_icon.setToolTip(self.t("tray.tooltip"))
         self.tray_menu = QMenu(self)
         self.tray_show_action = QAction(self.t("tray.show"), self)
@@ -181,8 +183,10 @@ class CapacityWatcherWindow(QMainWindow):
         self.tray_menu.addAction(self.tray_quit_action)
         self.tray_icon.setContextMenu(self.tray_menu)
         self.tray_icon.activated.connect(self._tray_activated)
-        if QSystemTrayIcon.isSystemTrayAvailable():
-            self.tray_icon.show()
+        # Always ask Qt to show the platform-specific status-area icon;
+        # macOS can report a false availability value while its item works.
+        self.tray_icon.setVisible(True)
+        self.tray_icon.show()
         self._update_tray_text()
 
     def _update_tray_text(self) -> None:
