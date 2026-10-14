@@ -58,6 +58,7 @@ def default_settings() -> dict[str, Any]:
         "session_types": list(SESSION_TYPE_KEYS),
         "include_subagents": False,
         "dry_run": False,
+        "close_to_tray": True,
     }
 
 

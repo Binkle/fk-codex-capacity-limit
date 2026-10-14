@@ -128,6 +128,7 @@ def test_new_defaults_select_all_session_types():
     settings = gui.default_settings()
 
     assert settings["session_types"] == list(gui.SESSION_TYPE_KEYS)
+    assert settings["close_to_tray"] is True
 
 
 def test_legacy_settings_migrate_to_session_type_selection(tmp_path):

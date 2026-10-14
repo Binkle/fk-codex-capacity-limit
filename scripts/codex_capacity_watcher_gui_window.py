@@ -6,7 +6,7 @@ from pathlib import Path
 from typing import Any
 
 from PySide6.QtCore import QProcess, QProcessEnvironment, QTimer, Qt
-from PySide6.QtGui import QAction, QCloseEvent, QIcon
+from PySide6.QtGui import QCloseEvent, QIcon
 from PySide6.QtWidgets import (
     QApplication,
     QCheckBox,
@@ -18,8 +18,6 @@ from PySide6.QtWidgets import (
     QMessageBox,
     QPlainTextEdit,
     QPushButton,
-    QMenu,
-    QSystemTrayIcon,
 )
 
 from codex_capacity_watcher_gui_config import (
@@ -42,6 +40,7 @@ from codex_capacity_watcher_gui_config import (
 from codex_capacity_watcher_i18n import normalize_language, translate
 from codex_capacity_watcher_gui_pages import build_shell
 from codex_capacity_watcher_gui_theme import APP_STYLESHEET
+from codex_capacity_watcher_gui_tray import TrayController
 from codex_capacity_watcher_process import pid_is_running
 
 
@@ -62,6 +61,7 @@ class CapacityWatcherWindow(QMainWindow):
         self.running_settings: dict[str, Any] | None = None
         self.close_requested = False
         self.allow_close = False
+        self.tray: TrayController | None = None
         self.current_page = 0
         self.status_error_code: int | None = None
         self.external_poll = QTimer(self)
@@ -69,7 +69,7 @@ class CapacityWatcherWindow(QMainWindow):
         self.external_poll.timeout.connect(self._poll_external_watcher)
         self._create_controls()
         build_shell(self)
-        self._create_tray()
+        self.tray = TrayController(self)
         self._append_log(self.t("log.ready"))
         self._poll_external_watcher()
         self.external_poll.start()
@@ -100,6 +100,8 @@ class CapacityWatcherWindow(QMainWindow):
         self.include_subagents.setChecked(bool(self.settings["include_subagents"]))
         self.dry_run = QCheckBox(self.t("option.dry_run"))
         self.dry_run.setChecked(bool(self.settings["dry_run"]))
+        self.close_to_tray = QCheckBox(self.t("option.close_to_tray"))
+        self.close_to_tray.setChecked(bool(self.settings.get("close_to_tray", True)))
 
         self.toggle_button = QPushButton()
         self.toggle_button.setObjectName("actionButton")
@@ -161,64 +163,13 @@ class CapacityWatcherWindow(QMainWindow):
         self.log.setPlainText(log_text)
         self._show_page(page_index)
         self._set_status(None, str(state))
-        self._update_tray_text()
 
-    def _create_tray(self) -> None:
-        self.tray_icon = QSystemTrayIcon(self)
-        icon_path = asset_path(APP_ICON_NAME)
-        icon = QIcon(str(icon_path)) if icon_path.is_file() else self.windowIcon()
-        self.tray_icon.setIcon(icon)
-        self.tray_icon.setToolTip(self.t("tray.tooltip"))
-        self.tray_menu = QMenu(self)
-        self.tray_show_action = QAction(self.t("tray.show"), self)
-        self.tray_show_action.triggered.connect(self._restore_window)
-        self.tray_menu.addAction(self.tray_show_action)
-        self.tray_menu.addSeparator()
-        self.tray_toggle_action = QAction(self.t("tray.start"), self)
-        self.tray_toggle_action.triggered.connect(self._toggle_watcher)
-        self.tray_menu.addAction(self.tray_toggle_action)
-        self.tray_menu.addSeparator()
-        self.tray_quit_action = QAction(self.t("tray.quit"), self)
-        self.tray_quit_action.triggered.connect(self._quit_from_tray)
-        self.tray_menu.addAction(self.tray_quit_action)
-        self.tray_icon.setContextMenu(self.tray_menu)
-        self.tray_icon.activated.connect(self._tray_activated)
-        # Always ask Qt to show the platform-specific status-area icon;
-        # macOS can report a false availability value while its item works.
-        self.tray_icon.setVisible(True)
-        self.tray_icon.show()
-        self._update_tray_text()
-
-    def _update_tray_text(self) -> None:
-        if not hasattr(self, "tray_icon"):
-            return
-        self.tray_icon.setToolTip(self.t("tray.tooltip"))
-        self.tray_show_action.setText(self.t("tray.show"))
-        state = self.status.property("state") if hasattr(self, "status") else "idle"
-        self.tray_toggle_action.setText(self.t("tray.stop" if state == "running" else "tray.start"))
-        self.tray_toggle_action.setEnabled(self.stop_process is None)
-        self.tray_quit_action.setText(self.t("tray.quit"))
-
-    def _restore_window(self) -> None:
-        self.showNormal()
-        self.raise_()
-        self.activateWindow()
-
-    def _tray_activated(self, reason: QSystemTrayIcon.ActivationReason) -> None:
-        if reason == QSystemTrayIcon.ActivationReason.DoubleClick:
-            self._restore_window()
-
-    def _quit_from_tray(self) -> None:
-        self.close_requested = True
-        if self.process and self.process.state() != QProcess.ProcessState.NotRunning:
-            self._stop()
-            return
-        if self.stop_process and self.stop_process.state() != QProcess.ProcessState.NotRunning:
-            return
-        if self._watcher_pid(self.running_settings or self.settings) is not None:
-            self._stop()
-            return
-        self._maybe_close()
+    def _update_tray(self) -> None:
+        if self.tray is not None:
+            self.tray.update(
+                str(self.status.property("state")),
+                stop_busy=self.stop_process is not None,
+            )
 
     def _settings_from_form(self) -> dict[str, Any]:
         codex_home = self.codex_home.text().strip()
@@ -250,6 +201,7 @@ class CapacityWatcherWindow(QMainWindow):
             "session_types": session_types,
             "include_subagents": self.include_subagents.isChecked(),
             "dry_run": self.dry_run.isChecked(),
+            "close_to_tray": self.close_to_tray.isChecked(),
         }
 
     def _save(self) -> bool:
@@ -303,6 +255,18 @@ class CapacityWatcherWindow(QMainWindow):
             self._stop()
             return
         self._start()
+
+    def _request_quit(self) -> None:
+        self.close_requested = True
+        if self.process and self.process.state() != QProcess.ProcessState.NotRunning:
+            self._stop()
+            return
+        if self.stop_process and self.stop_process.state() != QProcess.ProcessState.NotRunning:
+            return
+        if self._watcher_pid(self.running_settings or self.settings) is not None:
+            self._stop()
+            return
+        self._maybe_close()
 
     def _start(self) -> None:
         if self.process and self.process.state() != QProcess.ProcessState.NotRunning:
@@ -408,7 +372,7 @@ class CapacityWatcherWindow(QMainWindow):
             button_style = self.toggle_button.style()
             button_style.unpolish(self.toggle_button)
             button_style.polish(self.toggle_button)
-        self._update_tray_text()
+        self._update_tray()
 
     def _watcher_finished(self, exit_code: int, _status: QProcess.ExitStatus) -> None:
         if self.process is not None:
@@ -483,9 +447,13 @@ class CapacityWatcherWindow(QMainWindow):
             self.close()
 
     def closeEvent(self, event: QCloseEvent) -> None:
-        if not self.allow_close:
+        if not self.allow_close and self.close_to_tray.isChecked():
             self._save()
-            self.showMinimized()
+            self.hide()
+            event.ignore()
+            return
+        if not self.allow_close:
+            self._request_quit()
             event.ignore()
             return
         self.allow_close = False

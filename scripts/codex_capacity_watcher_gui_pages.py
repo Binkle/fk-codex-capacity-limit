@@ -285,6 +285,7 @@ def build_options_card(host: UiHost) -> QFrame:
     checks.addWidget(host.recover, 2, 0)
     checks.addWidget(host.include_subagents, 2, 1)
     checks.addWidget(host.dry_run, 3, 0)
+    checks.addWidget(host.close_to_tray, 3, 1)
     layout.addLayout(checks)
     return options_card
 

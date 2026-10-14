@@ -93,6 +93,8 @@ python3 scripts/codex_capacity_watcher.py --help
 `codex exec`。新安装默认勾选全部四类会话，也可以选择是否恢复历史、是否
 包含子代理，并查看实时日志。界面支持中文和 English，默认跟随系统语言，
 也可以在窗口顶部切换；“回看时间”用于处理监控停止期间最近的限流会话。
+关闭按钮行为可以在“运行设置”中选择：隐藏到系统托盘并继续监控，或直接退出。
+系统托盘菜单可以显示窗口、开始/停止监控和退出应用。
 
 macOS 可以双击 `run-codex-capacity-watcher.command`，Windows 可以双击
 `run-codex-capacity-watcher.bat`。直接运行源码时需要 Python 3.10 及以上，
