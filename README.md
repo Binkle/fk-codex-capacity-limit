@@ -81,6 +81,33 @@ See all available options:
 python3 scripts/codex_capacity_watcher.py --help
 ```
 
+## Desktop GUI
+
+The repository also includes a desktop interface for users who do not want to
+use a terminal. It provides Start and Stop buttons, a scan-interval field,
+Codex/state-file selectors, the follow-up message, recovery, session filters,
+recovery duration, preview mode, and a live log window.
+
+On macOS, double-click `run-codex-capacity-watcher.command`. On Windows,
+double-click `run-codex-capacity-watcher.bat`. The source launcher requires
+Python 3.10+ with Tkinter; it does not add a third-party runtime dependency.
+
+To build a standalone application for the current operating system, install
+Python and run the matching build script:
+
+```bash
+# macOS
+sh packaging/build-macos.sh
+
+# Windows (Command Prompt)
+packaging\build-windows.bat
+```
+
+The macOS build creates `dist/CodexCapacityWatcher.app`; the Windows build
+creates `dist\CodexCapacityWatcher.exe`. PyInstaller packages the watcher and
+GUI together, so the person using the finished application does not need to
+run the Python script manually.
+
 ## How it works
 
 The watcher stores the read offset for each rollout file and records queued events in its state file. When it detects a new capacity error, it extracts the session ID and turn ID, then calls `codex queue` to send the follow-up to the original session. Failed sends are not marked as processed, so a later scan can retry them.

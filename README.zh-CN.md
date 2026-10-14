@@ -81,6 +81,31 @@ python3 scripts/codex_capacity_watcher.py --include-subagents
 python3 scripts/codex_capacity_watcher.py --help
 ```
 
+## 桌面 GUI
+
+仓库还提供了给非开发人员使用的桌面界面。界面支持点击“开始监控”和
+“停止监控”，设置扫描间隔，选择 Codex 主目录、状态文件和 Codex 程序，
+修改发送内容，选择是否恢复历史、是否包含其他会话，并查看实时日志。
+恢复历史时还可以设置恢复时长。
+
+macOS 可以双击 `run-codex-capacity-watcher.command`，Windows 可以双击
+`run-codex-capacity-watcher.bat`。直接运行源码时需要 Python 3.10 及以上并
+带有 Tkinter，不需要额外的第三方运行时依赖。
+
+如果希望交付给完全不需要 Python 的用户，可以在对应系统上构建独立应用：
+
+```bash
+# macOS
+sh packaging/build-macos.sh
+
+# Windows（命令提示符）
+packaging\build-windows.bat
+```
+
+macOS 构建结果是 `dist/CodexCapacityWatcher.app`，Windows 构建结果是
+`dist\CodexCapacityWatcher.exe`。PyInstaller 会把 GUI 和监控脚本一起打包，
+使用者不需要再手动运行 Python 脚本。
+
 ## 工作方式
 
 脚本会保存每个 rollout 文件的读取位置，并将已发送的事件写入状态文件。检测到新的容量错误后，它会提取 session ID 和 turn ID，调用 `codex queue` 向原会话发送消息。发送失败时不会把事件标记为已处理，下一轮扫描可以再次尝试。运行期间，脚本会将进程号写入 PID 文件；`--stop` 会发送 `SIGTERM` 请求优雅退出，退出时自动清理 PID 文件。如果没有有效的 PID 文件，`--stop` 还会查找正在运行的旧版本脚本进程并停止它们。
