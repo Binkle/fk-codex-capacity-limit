@@ -101,7 +101,15 @@ monitoring and exit (also available from the application menu and via ⌘Q on ma
 To exit when closing the window, turn off **Keep running after closing the main
 window** in Settings. If the system tray is unavailable, closing exits the app.
 
-On macOS, double-click `run-codex-capacity-watcher.command`. On Windows,
+On macOS, download the `.dmg` from [Releases](https://github.com/Binkle/fk-codex-capacity-limit/releases/latest)
+and double-click it. In the installation window, drag **CodexCapacityWatcher**
+onto the **Applications** folder on the right. Wait for the copy to finish,
+open the app from Applications, then eject the disk image. When updating,
+quit the previous version from its menu-bar menu before replacing it.
+
+![macOS drag-to-install window](docs/images/macos-installer.png)
+
+To run from source, on macOS double-click `run-codex-capacity-watcher.command`. On Windows,
 double-click `run-codex-capacity-watcher.bat`. The source launcher requires
 Python 3.10+ with PySide6. Install the GUI dependency with
 `python3 -m pip install -r requirements-gui.txt` when running from source.
@@ -129,7 +137,10 @@ watcher and GUI together, so the person using the finished application does
 not need to run the Python script manually.
 
 The Windows build requires [NSIS](https://nsis.sourceforge.io/Download). The
-macOS build uses the system `hdiutil`, `ditto`, and `iconutil` tools.
+macOS build uses the system `hdiutil`, `ditto`, and `iconutil` tools and installs
+`dmgbuild` automatically. The DMG includes an Applications shortcut and a bilingual
+drag-to-install background. The build verifies the finished image's app signature,
+bundle symlinks, installation shortcut, and Finder layout before reporting success.
 
 The repository also includes a GitHub Actions workflow at
 `.github/workflows/build-desktop.yml`. Run it manually from the Actions tab, or

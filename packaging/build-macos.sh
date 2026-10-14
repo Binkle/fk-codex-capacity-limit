@@ -9,6 +9,9 @@ PYTHON_BIN=${PYTHON_BIN:-python3}
 if ! "$PYTHON_BIN" -c 'import PyInstaller, PySide6' >/dev/null 2>&1; then
   "$PYTHON_BIN" -m pip install --upgrade pyinstaller PySide6
 fi
+if ! "$PYTHON_BIN" -c 'import dmgbuild' >/dev/null 2>&1; then
+  "$PYTHON_BIN" -m pip install 'dmgbuild==1.6.7'
+fi
 
 ICON_FILE="$PROJECT_ROOT/packaging/assets/CodexCapacityWatcher.icns"
 ICON_SOURCE="$PROJECT_ROOT/packaging/assets/codex-capacity-watcher-icon.png"
@@ -34,12 +37,9 @@ ditto -c -k --sequesterRsrc --keepParent \
   dist/CodexCapacityWatcher.app \
   dist/CodexCapacityWatcher-macos.zip
 
-hdiutil create \
-  -volname "Codex Capacity Watcher" \
-  -srcfolder dist/CodexCapacityWatcher.app \
-  -ov \
-  -format UDZO \
-  dist/CodexCapacityWatcher-macos.dmg >/dev/null
+"$PYTHON_BIN" packaging/create_macos_dmg.py \
+  dist/CodexCapacityWatcher.app dist/CodexCapacityWatcher-macos.dmg
+"$PYTHON_BIN" packaging/verify_macos_dmg.py dist/CodexCapacityWatcher-macos.dmg
 
 echo "Built dist/CodexCapacityWatcher.app"
 echo "Built dist/CodexCapacityWatcher-macos.zip"
