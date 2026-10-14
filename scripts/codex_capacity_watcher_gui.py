@@ -198,6 +198,33 @@ QPushButton#primaryButton:hover {
     background: #2168c6;
     color: #ffffff;
 }
+QPushButton#actionButton {
+    background: #2f80ed;
+    border: none;
+    color: #ffffff;
+    font-weight: 700;
+    min-width: 130px;
+    padding: 10px 17px;
+}
+QPushButton#actionButton:hover {
+    background: #2168c6;
+    color: #ffffff;
+}
+QPushButton#actionButton[state="running"] {
+    background: #fff3f3;
+    border: 1px solid #f1caca;
+    color: #bd4c4c;
+}
+QPushButton#actionButton[state="running"]:hover {
+    background: #ffe8e8;
+    border-color: #e8adad;
+    color: #a53d3d;
+}
+QPushButton#actionButton:disabled {
+    background: #f3f4f7;
+    border-color: #e9ebf0;
+    color: #adb4c2;
+}
 QPushButton#dangerButton {
     background: #fff3f3;
     border-color: #f1caca;
@@ -438,12 +465,10 @@ if QT_IMPORT_ERROR is None:
             self.dry_run = QCheckBox("仅预览，不实际发送")
             self.dry_run.setChecked(bool(self.settings["dry_run"]))
 
-            self.start_button = QPushButton("开始监控")
-            self.stop_button = QPushButton("停止监控")
+            self.toggle_button = QPushButton("开始监控")
+            self.toggle_button.setObjectName("actionButton")
             self.save_button = QPushButton("保存设置")
-            self.stop_button.setEnabled(False)
-            self.start_button.clicked.connect(self._start)
-            self.stop_button.clicked.connect(self._stop)
+            self.toggle_button.clicked.connect(self._toggle_watcher)
             self.save_button.clicked.connect(self._save)
 
             self.status = QLabel("已停止")
@@ -594,10 +619,7 @@ if QT_IMPORT_ERROR is None:
 
             controls = QHBoxLayout()
             controls.setSpacing(8)
-            self.start_button.setObjectName("primaryButton")
-            self.stop_button.setObjectName("dangerButton")
-            controls.addWidget(self.start_button)
-            controls.addWidget(self.stop_button)
+            controls.addWidget(self.toggle_button)
             controls.addStretch(1)
             controls_hint = QLabel("需要调整路径或扫描范围？打开左侧的“运行设置”。")
             controls_hint.setObjectName("sectionHint")
@@ -912,17 +934,27 @@ if QT_IMPORT_ERROR is None:
             pid = self._watcher_pid(settings)
             if pid is not None:
                 self.running_settings = settings
-                self.start_button.setEnabled(False)
-                self.stop_button.setEnabled(True)
+                self.toggle_button.setEnabled(self.stop_process is None)
                 if self.status.property("state") != "running":
                     self._append_log(f"检测到监控已在运行（PID {pid}）。")
                     self._set_status("运行中", "running")
                 return
             if self.stop_process is None and self.status.property("state") == "running":
                 self.running_settings = None
-                self.start_button.setEnabled(True)
-                self.stop_button.setEnabled(False)
+                self.toggle_button.setEnabled(True)
                 self._set_status("已停止", "idle")
+
+        def _toggle_watcher(self) -> None:
+            if self.stop_process and self.stop_process.state() != QProcess.ProcessState.NotRunning:
+                return
+            if self.process and self.process.state() != QProcess.ProcessState.NotRunning:
+                self._stop()
+                return
+            settings = self.running_settings or self.settings
+            if self._watcher_pid(settings) is not None:
+                self._stop()
+                return
+            self._start()
 
         def _start(self) -> None:
             if self.process and self.process.state() != QProcess.ProcessState.NotRunning:
@@ -937,8 +969,7 @@ if QT_IMPORT_ERROR is None:
             existing_pid = self._watcher_pid(settings)
             if existing_pid is not None:
                 self.running_settings = settings
-                self.start_button.setEnabled(False)
-                self.stop_button.setEnabled(True)
+                self.toggle_button.setEnabled(True)
                 self._append_log(f"监控已经在运行（PID {existing_pid}），无需重复启动。")
                 self._set_status("运行中", "running")
                 return
@@ -960,8 +991,7 @@ if QT_IMPORT_ERROR is None:
                 self._reset_watcher_state()
                 QMessageBox.critical(self, "无法启动", process.errorString())
                 return
-            self.start_button.setEnabled(False)
-            self.stop_button.setEnabled(True)
+            self.toggle_button.setEnabled(True)
             self._set_status("运行中", "running")
 
         def _stop(self) -> None:
@@ -988,9 +1018,9 @@ if QT_IMPORT_ERROR is None:
             if not process.waitForStarted(3000):
                 self._append_log(f"停止失败：{process.errorString()}")
                 self.stop_process = None
-                self.stop_button.setEnabled(True)
+                self.toggle_button.setEnabled(True)
             else:
-                self.stop_button.setEnabled(False)
+                self.toggle_button.setEnabled(False)
 
         @staticmethod
         def _read_output(process: QProcess) -> None:
@@ -1008,6 +1038,20 @@ if QT_IMPORT_ERROR is None:
             style.polish(self.status)
             if hasattr(self, "side_status_value"):
                 self.side_status_value.setText("运行中" if state == "running" else text)
+            if hasattr(self, "toggle_button"):
+                if state == "running":
+                    self.toggle_button.setText("停止监控")
+                    self.toggle_button.setToolTip("停止当前容量监控")
+                elif state == "idle":
+                    self.toggle_button.setText("开始监控")
+                    self.toggle_button.setToolTip("启动容量监控")
+                else:
+                    self.toggle_button.setText("重新启动")
+                    self.toggle_button.setToolTip("重新启动容量监控")
+                self.toggle_button.setProperty("state", state)
+                button_style = self.toggle_button.style()
+                button_style.unpolish(self.toggle_button)
+                button_style.polish(self.toggle_button)
 
         def _watcher_finished(self, exit_code: int, _status: QProcess.ExitStatus) -> None:
             if self.process is not None:
@@ -1016,8 +1060,7 @@ if QT_IMPORT_ERROR is None:
                 self._set_status("已停止", "idle")
             else:
                 self._set_status(f"已退出（代码 {exit_code}）", "error")
-            self.start_button.setEnabled(True)
-            self.stop_button.setEnabled(False)
+            self.toggle_button.setEnabled(True)
             self.process = None
             self.running_settings = None
             self._maybe_close()
@@ -1030,8 +1073,7 @@ if QT_IMPORT_ERROR is None:
             self.stop_process = None
             if self.process is None and exit_code == 0:
                 self.running_settings = None
-                self.start_button.setEnabled(True)
-                self.stop_button.setEnabled(False)
+                self.toggle_button.setEnabled(True)
                 self._set_status("已停止", "idle")
             self._maybe_close()
 
@@ -1046,8 +1088,7 @@ if QT_IMPORT_ERROR is None:
         def _reset_watcher_state(self) -> None:
             self.process = None
             self.running_settings = None
-            self.start_button.setEnabled(True)
-            self.stop_button.setEnabled(False)
+            self.toggle_button.setEnabled(True)
             self._set_status("启动失败", "error")
 
         def _maybe_close(self) -> None:
