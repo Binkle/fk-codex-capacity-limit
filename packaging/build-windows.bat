@@ -15,11 +15,15 @@ py -3 -m PyInstaller ^
   --hidden-import codex_capacity_watcher ^
   scripts\codex_capacity_watcher_gui.py
 
-where makensis >nul 2>&1
-if errorlevel 1 (
+set "MAKENSIS=%ProgramFiles(x86)%\NSIS\makensis.exe"
+if not exist "%MAKENSIS%" set "MAKENSIS=%ProgramFiles%\NSIS\makensis.exe"
+if not exist "%MAKENSIS%" for /f "delims=" %%I in ('where makensis.exe 2^>nul') do set "MAKENSIS=%%I"
+if not exist "%MAKENSIS%" (
   echo NSIS is required to build the Windows installer. Install it from https://nsis.sourceforge.io/Download
   exit /b 1
 )
-makensis packaging\windows-installer.nsi
+echo Using NSIS: %MAKENSIS%
+"%MAKENSIS%" packaging\windows-installer.nsi
+if errorlevel 1 exit /b 1
 
 echo Built dist\CodexCapacityWatcher-Setup.exe
