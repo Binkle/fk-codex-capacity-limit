@@ -32,6 +32,7 @@ try:
         QMessageBox,
         QPlainTextEdit,
         QPushButton,
+        QStackedWidget,
         QVBoxLayout,
         QWidget,
     )
@@ -49,46 +50,46 @@ SCRIPT_PATH = Path(__file__).with_name("codex_capacity_watcher.py")
 
 APP_STYLESHEET = """
 QMainWindow, QWidget#appRoot {
-    background: #f5f7fb;
-    color: #20283a;
+    background: #f4f7fb;
+    color: #1f2937;
 }
 QFrame#sidebar {
-    background: #ffffff;
-    border: 1px solid #e5e8f0;
+    background: #202a3a;
+    border: none;
     border-radius: 18px;
 }
 QLabel#brandMark {
-    background: #5b5de2;
+    background: #2f80ed;
     color: #ffffff;
     border-radius: 12px;
     font-size: 16px;
     font-weight: 700;
 }
 QLabel#brandTitle {
-    color: #1c2435;
+    color: #f8fafc;
     font-size: 15px;
     font-weight: 700;
 }
 QLabel#brandCaption, QLabel#sideCaption {
-    color: #9098aa;
+    color: #aab6c9;
     font-size: 11px;
 }
 QLabel#eyebrow {
-    color: #6265d7;
+    color: #2f80ed;
     font-size: 10px;
     font-weight: 700;
 }
 QLabel#pageTitle {
-    color: #161c2c;
+    color: #172033;
     font-size: 26px;
     font-weight: 700;
 }
 QLabel#pageSubtitle, QLabel#sectionHint {
-    color: #7f889b;
+    color: #738096;
     font-size: 12px;
 }
 QLabel#sectionTitle {
-    color: #20283a;
+    color: #1f2937;
     font-size: 14px;
     font-weight: 700;
 }
@@ -97,39 +98,46 @@ QLabel#fieldLabel {
     font-size: 11px;
     font-weight: 600;
 }
-QLabel#navItem, QLabel#navItemActive {
+QPushButton#navItem {
+    background: transparent;
+    border: none;
     border-radius: 10px;
     padding: 10px 12px;
-    color: #687287;
+    color: #aeb9ca;
     font-size: 12px;
+    text-align: left;
 }
-QLabel#navItemActive {
-    background: #eef0ff;
-    color: #5558c9;
+QPushButton#navItem:hover {
+    background: #2b384c;
+    color: #ffffff;
+}
+QPushButton#navItem:checked {
+    background: #2f80ed;
+    color: #ffffff;
     font-weight: 700;
 }
 QFrame#sideStatus {
-    background: #f8f9fc;
-    border: 1px solid #eaecf3;
+    background: #293649;
+    border: 1px solid #35445a;
     border-radius: 12px;
 }
 QLabel#sideStatusTitle {
-    color: #5f687b;
+    color: #b7c1d1;
     font-size: 11px;
     font-weight: 700;
 }
 QLabel#sideStatusValue {
-    color: #7f889b;
+    color: #f3f6fb;
     font-size: 11px;
 }
 QFrame#card {
     background: #ffffff;
-    border: 1px solid #e5e8f0;
+    border: 1px solid #e3e9f2;
     border-radius: 16px;
 }
 QLabel#statusPill {
-    background: #eef1f5;
-    color: #697386;
+    background: #edf2f7;
+    color: #5d6b7e;
     border-radius: 10px;
     padding: 6px 11px;
     font-size: 11px;
@@ -144,33 +152,33 @@ QLabel#statusPill[state="error"] {
     color: #c04444;
 }
 QLineEdit, QDoubleSpinBox {
-    background: #fafbfe;
-    border: 1px solid #dfe3ec;
+    background: #fbfcfe;
+    border: 1px solid #d8e1ec;
     border-radius: 9px;
     padding: 7px 10px;
     min-height: 18px;
-    color: #273044;
-    selection-background-color: #6669dc;
+    color: #27364a;
+    selection-background-color: #2f80ed;
 }
 QLineEdit:focus, QDoubleSpinBox:focus {
     background: #ffffff;
-    border: 1px solid #7a7de4;
+    border: 1px solid #5595ed;
 }
 QPushButton {
-    background: #f5f6fa;
-    border: 1px solid #e0e3eb;
+    background: #f6f8fb;
+    border: 1px solid #dce4ee;
     border-radius: 9px;
     padding: 8px 13px;
-    color: #556075;
+    color: #536277;
     font-size: 12px;
 }
 QPushButton:hover {
-    background: #eef0ff;
-    border-color: #cbd0ff;
-    color: #5356c7;
+    background: #edf5ff;
+    border-color: #a9c9f4;
+    color: #2168c6;
 }
 QPushButton:pressed {
-    background: #e1e4fc;
+    background: #dcecff;
 }
 QPushButton:disabled {
     background: #f3f4f7;
@@ -178,7 +186,7 @@ QPushButton:disabled {
     color: #adb4c2;
 }
 QPushButton#primaryButton {
-    background: #5b5de2;
+    background: #2f80ed;
     border: none;
     color: #ffffff;
     font-weight: 700;
@@ -186,7 +194,7 @@ QPushButton#primaryButton {
     padding: 10px 17px;
 }
 QPushButton#primaryButton:hover {
-    background: #4e50cb;
+    background: #2168c6;
     color: #ffffff;
 }
 QPushButton#dangerButton {
@@ -208,8 +216,19 @@ QPushButton#quietButton {
     padding: 5px 7px;
 }
 QPushButton#quietButton:hover {
-    background: #f0f1f8;
-    color: #5356c7;
+    background: #edf5ff;
+    color: #2168c6;
+}
+QPushButton#saveButton {
+    background: #edf5ff;
+    border-color: #b8d3f7;
+    color: #2168c6;
+    font-weight: 700;
+    min-width: 88px;
+}
+QPushButton#saveButton:hover {
+    background: #dcecff;
+    border-color: #8fb9f0;
 }
 QCheckBox {
     spacing: 8px;
@@ -225,19 +244,28 @@ QCheckBox::indicator {
     background: #ffffff;
 }
 QCheckBox::indicator:hover {
-    border-color: #8588e5;
+    border-color: #5997e8;
 }
 QCheckBox::indicator:checked {
-    background: #5b5de2;
-    border-color: #5b5de2;
+    background: #2f80ed;
+    border-color: #2f80ed;
 }
 QPlainTextEdit {
-    background: #171b2c;
+    background: #172334;
     color: #dce1f4;
     border: none;
     border-radius: 11px;
     padding: 10px;
-    selection-background-color: #484c78;
+    selection-background-color: #3e6b9e;
+}
+QStackedWidget#pageStack {
+    background: transparent;
+    border: none;
+}
+QLabel#helpBody {
+    color: #64748b;
+    font-size: 12px;
+    line-height: 1.5;
 }
 QScrollBar:vertical {
     width: 8px;
@@ -245,7 +273,7 @@ QScrollBar:vertical {
     margin: 3px;
 }
 QScrollBar::handle:vertical {
-    background: #c7ccda;
+    background: #b8c4d3;
     border-radius: 4px;
     min-height: 24px;
 }
@@ -440,9 +468,9 @@ if QT_IMPORT_ERROR is None:
             central = QWidget()
             central.setObjectName("appRoot")
             self.setCentralWidget(central)
-            layout = QHBoxLayout(central)
-            layout.setContentsMargins(16, 16, 16, 16)
-            layout.setSpacing(16)
+            root_layout = QHBoxLayout(central)
+            root_layout.setContentsMargins(16, 16, 16, 16)
+            root_layout.setSpacing(16)
 
             sidebar = QFrame()
             sidebar.setObjectName("sidebar")
@@ -473,9 +501,14 @@ if QT_IMPORT_ERROR is None:
             nav_caption = QLabel("工作区")
             nav_caption.setObjectName("eyebrow")
             sidebar_layout.addWidget(nav_caption)
-            sidebar_layout.addWidget(self._nav_item("实时监控", active=True))
-            sidebar_layout.addWidget(self._nav_item("运行设置"))
-            sidebar_layout.addWidget(self._nav_item("使用说明"))
+            self.nav_buttons: list[QPushButton] = []
+            for page_index, page_name in enumerate(("实时监控", "运行设置", "使用说明")):
+                button = self._nav_item(page_name, active=page_index == 0)
+                button.clicked.connect(
+                    lambda _checked=False, index=page_index: self._show_page(index)
+                )
+                self.nav_buttons.append(button)
+                sidebar_layout.addWidget(button)
             sidebar_layout.addStretch(1)
 
             side_status = QFrame()
@@ -495,7 +528,7 @@ if QT_IMPORT_ERROR is None:
             footer.setObjectName("sideCaption")
             footer.setWordWrap(True)
             sidebar_layout.addWidget(footer)
-            layout.addWidget(sidebar)
+            root_layout.addWidget(sidebar)
 
             content = QWidget()
             content_layout = QVBoxLayout(content)
@@ -508,13 +541,13 @@ if QT_IMPORT_ERROR is None:
             page_heading.setSpacing(2)
             eyebrow = QLabel("CAPACITY WATCHER")
             eyebrow.setObjectName("eyebrow")
-            heading = QLabel("自动继续")
-            heading.setObjectName("pageTitle")
-            subtitle = QLabel("监听容量限制事件，并把消息发送回原会话。")
-            subtitle.setObjectName("pageSubtitle")
+            self.page_title = QLabel()
+            self.page_title.setObjectName("pageTitle")
+            self.page_subtitle = QLabel()
+            self.page_subtitle.setObjectName("pageSubtitle")
             page_heading.addWidget(eyebrow)
-            page_heading.addWidget(heading)
-            page_heading.addWidget(subtitle)
+            page_heading.addWidget(self.page_title)
+            page_heading.addWidget(self.page_subtitle)
             page_header.addLayout(page_heading, 1)
             self.status.setObjectName("statusPill")
             self.status.setMinimumWidth(72)
@@ -522,6 +555,21 @@ if QT_IMPORT_ERROR is None:
             self._set_status("已停止", "idle")
             page_header.addWidget(self.status, 0, Qt.AlignmentFlag.AlignTop)
             content_layout.addLayout(page_header)
+
+            self.page_stack = QStackedWidget()
+            self.page_stack.setObjectName("pageStack")
+            self.page_stack.addWidget(self._build_monitor_page())
+            self.page_stack.addWidget(self._build_settings_page())
+            self.page_stack.addWidget(self._build_help_page())
+            content_layout.addWidget(self.page_stack, 1)
+            root_layout.addWidget(content, 1)
+            self._show_page(0)
+
+        def _build_monitor_page(self) -> QWidget:
+            page = QWidget()
+            page_layout = QVBoxLayout(page)
+            page_layout.setContentsMargins(0, 0, 0, 0)
+            page_layout.setSpacing(13)
 
             control_card = self._card()
             control_layout = QVBoxLayout(control_card)
@@ -537,21 +585,68 @@ if QT_IMPORT_ERROR is None:
             control_header.addWidget(control_hint)
             control_header.addStretch(1)
             control_layout.addLayout(control_header)
+
             controls = QHBoxLayout()
             controls.setSpacing(8)
             self.start_button.setObjectName("primaryButton")
             self.stop_button.setObjectName("dangerButton")
-            self.save_button.setObjectName("quietButton")
             controls.addWidget(self.start_button)
             controls.addWidget(self.stop_button)
-            controls.addWidget(self.save_button)
             controls.addStretch(1)
-            controls_hint = QLabel("普通启动从新事件开始监听；需要补发历史事件时再打开恢复选项。")
+            controls_hint = QLabel("需要调整路径或扫描范围？打开左侧的“运行设置”。")
             controls_hint.setObjectName("sectionHint")
+            controls_hint.setWordWrap(True)
+            controls_hint.setMinimumWidth(250)
+            controls_hint.setMaximumWidth(300)
             controls.addWidget(controls_hint)
             control_layout.addLayout(controls)
-            content_layout.addWidget(control_card)
+            page_layout.addWidget(control_card)
 
+            log_card = self._card()
+            log_layout = QVBoxLayout(log_card)
+            log_layout.setContentsMargins(17, 15, 17, 15)
+            log_layout.setSpacing(9)
+            log_header = QHBoxLayout()
+            log_title = QLabel("运行日志")
+            log_title.setObjectName("sectionTitle")
+            log_hint = QLabel("实时显示 watcher 输出")
+            log_hint.setObjectName("sectionHint")
+            clear_button = QPushButton("清空")
+            clear_button.setObjectName("quietButton")
+            clear_button.clicked.connect(self.log.clear)
+            log_header.addWidget(log_title)
+            log_header.addSpacing(10)
+            log_header.addWidget(log_hint)
+            log_header.addStretch(1)
+            log_header.addWidget(clear_button)
+            log_layout.addLayout(log_header)
+            self.log.setPlaceholderText("启动监控后，运行信息会显示在这里。")
+            self.log.setMinimumHeight(150)
+            log_layout.addWidget(self.log, 1)
+            page_layout.addWidget(log_card, 1)
+            return page
+
+        def _build_settings_page(self) -> QWidget:
+            page = QWidget()
+            page_layout = QVBoxLayout(page)
+            page_layout.setContentsMargins(0, 0, 0, 0)
+            page_layout.setSpacing(13)
+            page_layout.addWidget(self._build_paths_card())
+            page_layout.addWidget(self._build_options_card())
+
+            save_card = self._card()
+            save_layout = QHBoxLayout(save_card)
+            save_layout.setContentsMargins(17, 13, 17, 13)
+            save_hint = QLabel("修改配置后点击保存，开始监控时也会自动保存。")
+            save_hint.setObjectName("sectionHint")
+            save_layout.addWidget(save_hint, 1)
+            self.save_button.setObjectName("saveButton")
+            save_layout.addWidget(self.save_button)
+            page_layout.addWidget(save_card)
+            page_layout.addStretch(1)
+            return page
+
+        def _build_paths_card(self) -> QFrame:
             paths_card = self._card()
             paths_layout = QVBoxLayout(paths_card)
             paths_layout.setContentsMargins(17, 15, 17, 15)
@@ -566,6 +661,7 @@ if QT_IMPORT_ERROR is None:
             paths_header.addWidget(paths_hint)
             paths_header.addStretch(1)
             paths_layout.addLayout(paths_header)
+
             paths = QGridLayout()
             paths.setHorizontalSpacing(12)
             paths.setVerticalSpacing(8)
@@ -578,8 +674,9 @@ if QT_IMPORT_ERROR is None:
             paths.addWidget(self._field_label("Codex 程序"), 2, 0)
             paths.addWidget(self._path_widget(self.codex, executable=True), 2, 1)
             paths_layout.addLayout(paths)
-            content_layout.addWidget(paths_card)
+            return paths_card
 
+        def _build_options_card(self) -> QFrame:
             options_card = self._card()
             options_layout = QVBoxLayout(options_card)
             options_layout.setContentsMargins(17, 15, 17, 15)
@@ -604,6 +701,7 @@ if QT_IMPORT_ERROR is None:
             fields.addWidget(self._field_column("扫描间隔", self.interval), 1)
             fields.addWidget(self._field_column("恢复时长", self.recover_hours), 1)
             options_layout.addLayout(fields)
+
             checks = QGridLayout()
             checks.setHorizontalSpacing(22)
             checks.setVerticalSpacing(2)
@@ -612,31 +710,55 @@ if QT_IMPORT_ERROR is None:
             checks.addWidget(self.include_subagents, 1, 0)
             checks.addWidget(self.dry_run, 1, 1)
             options_layout.addLayout(checks)
-            content_layout.addWidget(options_card)
+            return options_card
 
-            log_card = self._card()
-            log_layout = QVBoxLayout(log_card)
-            log_layout.setContentsMargins(17, 15, 17, 15)
-            log_layout.setSpacing(9)
-            log_header = QHBoxLayout()
-            log_title = QLabel("运行日志")
-            log_title.setObjectName("sectionTitle")
-            log_hint = QLabel("实时显示 watcher 输出")
-            log_hint.setObjectName("sectionHint")
-            clear_button = QPushButton("清空")
-            clear_button.setObjectName("quietButton")
-            clear_button.clicked.connect(self.log.clear)
-            log_header.addWidget(log_title)
-            log_header.addSpacing(10)
-            log_header.addWidget(log_hint)
-            log_header.addStretch(1)
-            log_header.addWidget(clear_button)
-            log_layout.addLayout(log_header)
-            self.log.setPlaceholderText("启动监控后，运行信息会显示在这里。")
-            self.log.setMinimumHeight(150)
-            log_layout.addWidget(self.log, 1)
-            content_layout.addWidget(log_card, 1)
-            layout.addWidget(content, 1)
+        def _build_help_page(self) -> QWidget:
+            page = QWidget()
+            page_layout = QVBoxLayout(page)
+            page_layout.setContentsMargins(0, 0, 0, 0)
+            page_layout.setSpacing(13)
+            page_layout.addWidget(
+                self._help_card(
+                    "三步开始",
+                    "1. 在“运行设置”中确认 Codex 主目录和程序路径。\n"
+                    "2. 按需设置发送内容、扫描间隔和会话范围。\n"
+                    "3. 回到“实时监控”，点击“开始监控”。",
+                )
+            )
+            page_layout.addWidget(
+                self._help_card(
+                    "普通启动与恢复",
+                    "普通启动只处理 watcher 启动后出现的新容量错误。\n"
+                    "如果需要检查停机期间的历史事件，请在运行设置中勾选“启动时恢复历史容量错误”，"
+                    "并设置恢复时长。",
+                )
+            )
+            page_layout.addWidget(
+                self._help_card(
+                    "停止运行",
+                    "回到“实时监控”后点击“停止监控”。关闭窗口时，如果 watcher 仍在运行，"
+                    "应用会先询问是否停止再退出。",
+                )
+            )
+            page_layout.addStretch(1)
+            return page
+
+        def _help_card(self, title: str, body: str) -> QFrame:
+            card = self._card()
+            card_layout = QVBoxLayout(card)
+            card_layout.setContentsMargins(17, 15, 17, 15)
+            card_layout.setSpacing(7)
+            title_label = QLabel(title)
+            title_label.setObjectName("sectionTitle")
+            body_label = QLabel(body)
+            body_label.setObjectName("helpBody")
+            body_label.setWordWrap(True)
+            body_label.setTextInteractionFlags(
+                Qt.TextInteractionFlag.TextSelectableByMouse
+            )
+            card_layout.addWidget(title_label)
+            card_layout.addWidget(body_label)
+            return card
 
         @staticmethod
         def _card() -> QFrame:
@@ -660,11 +782,28 @@ if QT_IMPORT_ERROR is None:
             return container
 
         @staticmethod
-        def _nav_item(text: str, *, active: bool = False) -> QLabel:
-            label = QLabel(text)
-            label.setObjectName("navItemActive" if active else "navItem")
-            return label
+        def _nav_item(text: str, *, active: bool = False) -> QPushButton:
+            button = QPushButton(text)
+            button.setObjectName("navItem")
+            button.setCheckable(True)
+            button.setChecked(active)
+            button.setCursor(Qt.CursorShape.PointingHandCursor)
+            return button
 
+        def _show_page(self, page_index: int) -> None:
+            if not hasattr(self, "page_stack"):
+                return
+            self.page_stack.setCurrentIndex(page_index)
+            page_titles = (
+                ("自动继续", "监听容量限制事件，并把消息发送回原会话。"),
+                ("运行设置", "配置 Codex 路径、发送内容和扫描范围。"),
+                ("使用说明", "快速了解如何启动、停止和恢复监控。"),
+            )
+            title, subtitle = page_titles[page_index]
+            self.page_title.setText(title)
+            self.page_subtitle.setText(subtitle)
+            for index, button in enumerate(self.nav_buttons):
+                button.setChecked(index == page_index)
         def _path_widget(
             self,
             line_edit: QLineEdit,
