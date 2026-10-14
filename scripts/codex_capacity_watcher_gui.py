@@ -23,9 +23,8 @@ try:
         QCheckBox,
         QDoubleSpinBox,
         QFileDialog,
-        QFormLayout,
+        QFrame,
         QGridLayout,
-        QGroupBox,
         QHBoxLayout,
         QLabel,
         QLineEdit,
@@ -46,6 +45,216 @@ else:
 APP_TITLE = "Codex Capacity Watcher"
 SETTINGS_FILE = Path.home() / ".codex" / "capacity-watcher-gui.json"
 SCRIPT_PATH = Path(__file__).with_name("codex_capacity_watcher.py")
+
+
+APP_STYLESHEET = """
+QMainWindow, QWidget#appRoot {
+    background: #f5f7fb;
+    color: #20283a;
+}
+QFrame#sidebar {
+    background: #ffffff;
+    border: 1px solid #e5e8f0;
+    border-radius: 18px;
+}
+QLabel#brandMark {
+    background: #5b5de2;
+    color: #ffffff;
+    border-radius: 12px;
+    font-size: 16px;
+    font-weight: 700;
+}
+QLabel#brandTitle {
+    color: #1c2435;
+    font-size: 15px;
+    font-weight: 700;
+}
+QLabel#brandCaption, QLabel#sideCaption {
+    color: #9098aa;
+    font-size: 11px;
+}
+QLabel#eyebrow {
+    color: #6265d7;
+    font-size: 10px;
+    font-weight: 700;
+}
+QLabel#pageTitle {
+    color: #161c2c;
+    font-size: 26px;
+    font-weight: 700;
+}
+QLabel#pageSubtitle, QLabel#sectionHint {
+    color: #7f889b;
+    font-size: 12px;
+}
+QLabel#sectionTitle {
+    color: #20283a;
+    font-size: 14px;
+    font-weight: 700;
+}
+QLabel#fieldLabel {
+    color: #6f788b;
+    font-size: 11px;
+    font-weight: 600;
+}
+QLabel#navItem, QLabel#navItemActive {
+    border-radius: 10px;
+    padding: 10px 12px;
+    color: #687287;
+    font-size: 12px;
+}
+QLabel#navItemActive {
+    background: #eef0ff;
+    color: #5558c9;
+    font-weight: 700;
+}
+QFrame#sideStatus {
+    background: #f8f9fc;
+    border: 1px solid #eaecf3;
+    border-radius: 12px;
+}
+QLabel#sideStatusTitle {
+    color: #5f687b;
+    font-size: 11px;
+    font-weight: 700;
+}
+QLabel#sideStatusValue {
+    color: #7f889b;
+    font-size: 11px;
+}
+QFrame#card {
+    background: #ffffff;
+    border: 1px solid #e5e8f0;
+    border-radius: 16px;
+}
+QLabel#statusPill {
+    background: #eef1f5;
+    color: #697386;
+    border-radius: 10px;
+    padding: 6px 11px;
+    font-size: 11px;
+    font-weight: 700;
+}
+QLabel#statusPill[state="running"] {
+    background: #e8f7ee;
+    color: #16834a;
+}
+QLabel#statusPill[state="error"] {
+    background: #fff0f0;
+    color: #c04444;
+}
+QLineEdit, QDoubleSpinBox {
+    background: #fafbfe;
+    border: 1px solid #dfe3ec;
+    border-radius: 9px;
+    padding: 7px 10px;
+    min-height: 18px;
+    color: #273044;
+    selection-background-color: #6669dc;
+}
+QLineEdit:focus, QDoubleSpinBox:focus {
+    background: #ffffff;
+    border: 1px solid #7a7de4;
+}
+QPushButton {
+    background: #f5f6fa;
+    border: 1px solid #e0e3eb;
+    border-radius: 9px;
+    padding: 8px 13px;
+    color: #556075;
+    font-size: 12px;
+}
+QPushButton:hover {
+    background: #eef0ff;
+    border-color: #cbd0ff;
+    color: #5356c7;
+}
+QPushButton:pressed {
+    background: #e1e4fc;
+}
+QPushButton:disabled {
+    background: #f3f4f7;
+    border-color: #e9ebf0;
+    color: #adb4c2;
+}
+QPushButton#primaryButton {
+    background: #5b5de2;
+    border: none;
+    color: #ffffff;
+    font-weight: 700;
+    min-width: 105px;
+    padding: 10px 17px;
+}
+QPushButton#primaryButton:hover {
+    background: #4e50cb;
+    color: #ffffff;
+}
+QPushButton#dangerButton {
+    background: #fff3f3;
+    border-color: #f1caca;
+    color: #bd4c4c;
+    min-width: 105px;
+    padding: 10px 17px;
+}
+QPushButton#dangerButton:hover {
+    background: #ffe8e8;
+    border-color: #e8adad;
+    color: #a53d3d;
+}
+QPushButton#quietButton {
+    background: transparent;
+    border: none;
+    color: #697386;
+    padding: 5px 7px;
+}
+QPushButton#quietButton:hover {
+    background: #f0f1f8;
+    color: #5356c7;
+}
+QCheckBox {
+    spacing: 8px;
+    padding: 3px 0;
+    color: #626d81;
+    font-size: 12px;
+}
+QCheckBox::indicator {
+    width: 16px;
+    height: 16px;
+    border: 1px solid #cfd4df;
+    border-radius: 5px;
+    background: #ffffff;
+}
+QCheckBox::indicator:hover {
+    border-color: #8588e5;
+}
+QCheckBox::indicator:checked {
+    background: #5b5de2;
+    border-color: #5b5de2;
+}
+QPlainTextEdit {
+    background: #171b2c;
+    color: #dce1f4;
+    border: none;
+    border-radius: 11px;
+    padding: 10px;
+    selection-background-color: #484c78;
+}
+QScrollBar:vertical {
+    width: 8px;
+    background: transparent;
+    margin: 3px;
+}
+QScrollBar::handle:vertical {
+    background: #c7ccda;
+    border-radius: 4px;
+    min-height: 24px;
+}
+QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical,
+QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical {
+    background: none;
+    height: 0px;
+}
+"""
 
 
 def default_codex_home() -> Path:
@@ -224,55 +433,237 @@ if QT_IMPORT_ERROR is None:
             return box
 
         def _build_ui(self) -> None:
+            self.setStyleSheet(APP_STYLESHEET)
+            self.setMinimumSize(980, 680)
+            self.resize(1120, 760)
+
             central = QWidget()
+            central.setObjectName("appRoot")
             self.setCentralWidget(central)
-            layout = QVBoxLayout(central)
-            layout.setContentsMargins(20, 18, 20, 18)
+            layout = QHBoxLayout(central)
+            layout.setContentsMargins(16, 16, 16, 16)
+            layout.setSpacing(16)
 
-            heading = QLabel("Codex 容量自动继续")
-            heading.setStyleSheet("font-size: 20px; font-weight: 600;")
-            layout.addWidget(heading)
-            subtitle = QLabel("容量不足时自动向原会话发送 continue。普通启动只监听新事件。")
-            subtitle.setStyleSheet("color: #666;")
-            layout.addWidget(subtitle)
+            sidebar = QFrame()
+            sidebar.setObjectName("sidebar")
+            sidebar.setFixedWidth(214)
+            sidebar_layout = QVBoxLayout(sidebar)
+            sidebar_layout.setContentsMargins(16, 18, 16, 16)
+            sidebar_layout.setSpacing(6)
 
-            paths = QFormLayout()
-            paths.setHorizontalSpacing(12)
-            paths.setVerticalSpacing(8)
-            paths.addRow("Codex 主目录", self._path_widget(self.codex_home, directory=True))
-            paths.addRow("状态文件", self._path_widget(self.state_file))
-            paths.addRow("Codex 程序", self._path_widget(self.codex, executable=True))
-            layout.addLayout(paths)
+            brand_row = QHBoxLayout()
+            brand_row.setSpacing(10)
+            brand_mark = QLabel("CW")
+            brand_mark.setObjectName("brandMark")
+            brand_mark.setFixedSize(38, 38)
+            brand_mark.setAlignment(Qt.AlignmentFlag.AlignCenter)
+            brand_row.addWidget(brand_mark)
+            brand_text = QVBoxLayout()
+            brand_text.setSpacing(1)
+            brand_title = QLabel("Capacity Watcher")
+            brand_title.setObjectName("brandTitle")
+            brand_caption = QLabel("本地自动继续工具")
+            brand_caption.setObjectName("brandCaption")
+            brand_text.addWidget(brand_title)
+            brand_text.addWidget(brand_caption)
+            brand_row.addLayout(brand_text, 1)
+            sidebar_layout.addLayout(brand_row)
+            sidebar_layout.addSpacing(26)
 
-            options_box = QGroupBox("运行选项")
-            options = QGridLayout(options_box)
-            options.setHorizontalSpacing(12)
-            options.setVerticalSpacing(8)
-            options.addWidget(QLabel("发送内容"), 0, 0)
-            options.addWidget(self.message, 0, 1)
-            options.addWidget(QLabel("扫描间隔（秒）"), 0, 2)
-            options.addWidget(self.interval, 0, 3)
-            options.addWidget(QLabel("恢复时长（小时）"), 0, 4)
-            options.addWidget(self.recover_hours, 0, 5)
-            options.addWidget(self.recover, 1, 0, 1, 2)
-            options.addWidget(self.all_sessions, 1, 2, 1, 2)
-            options.addWidget(self.include_subagents, 2, 0, 1, 2)
-            options.addWidget(self.dry_run, 2, 2, 1, 2)
-            options.setColumnStretch(1, 1)
-            layout.addWidget(options_box)
+            nav_caption = QLabel("工作区")
+            nav_caption.setObjectName("eyebrow")
+            sidebar_layout.addWidget(nav_caption)
+            sidebar_layout.addWidget(self._nav_item("实时监控", active=True))
+            sidebar_layout.addWidget(self._nav_item("运行设置"))
+            sidebar_layout.addWidget(self._nav_item("使用说明"))
+            sidebar_layout.addStretch(1)
 
+            side_status = QFrame()
+            side_status.setObjectName("sideStatus")
+            side_status_layout = QVBoxLayout(side_status)
+            side_status_layout.setContentsMargins(12, 11, 12, 11)
+            side_status_layout.setSpacing(4)
+            side_status_title = QLabel("本地进程")
+            side_status_title.setObjectName("sideStatusTitle")
+            self.side_status_value = QLabel("未运行")
+            self.side_status_value.setObjectName("sideStatusValue")
+            side_status_layout.addWidget(side_status_title)
+            side_status_layout.addWidget(self.side_status_value)
+            sidebar_layout.addWidget(side_status)
+            sidebar_layout.addSpacing(10)
+            footer = QLabel("配置保存在本机\n不会上传会话内容")
+            footer.setObjectName("sideCaption")
+            footer.setWordWrap(True)
+            sidebar_layout.addWidget(footer)
+            layout.addWidget(sidebar)
+
+            content = QWidget()
+            content_layout = QVBoxLayout(content)
+            content_layout.setContentsMargins(4, 2, 4, 2)
+            content_layout.setSpacing(13)
+
+            page_header = QHBoxLayout()
+            page_header.setSpacing(10)
+            page_heading = QVBoxLayout()
+            page_heading.setSpacing(2)
+            eyebrow = QLabel("CAPACITY WATCHER")
+            eyebrow.setObjectName("eyebrow")
+            heading = QLabel("自动继续")
+            heading.setObjectName("pageTitle")
+            subtitle = QLabel("监听容量限制事件，并把消息发送回原会话。")
+            subtitle.setObjectName("pageSubtitle")
+            page_heading.addWidget(eyebrow)
+            page_heading.addWidget(heading)
+            page_heading.addWidget(subtitle)
+            page_header.addLayout(page_heading, 1)
+            self.status.setObjectName("statusPill")
+            self.status.setMinimumWidth(72)
+            self.status.setAlignment(Qt.AlignmentFlag.AlignCenter)
+            self._set_status("已停止", "idle")
+            page_header.addWidget(self.status, 0, Qt.AlignmentFlag.AlignTop)
+            content_layout.addLayout(page_header)
+
+            control_card = self._card()
+            control_layout = QVBoxLayout(control_card)
+            control_layout.setContentsMargins(17, 15, 17, 15)
+            control_layout.setSpacing(11)
+            control_header = QHBoxLayout()
+            control_title = QLabel("监控控制")
+            control_title.setObjectName("sectionTitle")
+            control_hint = QLabel("准备好后即可在后台运行")
+            control_hint.setObjectName("sectionHint")
+            control_header.addWidget(control_title)
+            control_header.addSpacing(10)
+            control_header.addWidget(control_hint)
+            control_header.addStretch(1)
+            control_layout.addLayout(control_header)
             controls = QHBoxLayout()
+            controls.setSpacing(8)
+            self.start_button.setObjectName("primaryButton")
+            self.stop_button.setObjectName("dangerButton")
+            self.save_button.setObjectName("quietButton")
             controls.addWidget(self.start_button)
             controls.addWidget(self.stop_button)
             controls.addWidget(self.save_button)
-            controls.addStretch()
-            controls.addWidget(self.status)
-            layout.addLayout(controls)
+            controls.addStretch(1)
+            controls_hint = QLabel("普通启动从新事件开始监听；需要补发历史事件时再打开恢复选项。")
+            controls_hint.setObjectName("sectionHint")
+            controls.addWidget(controls_hint)
+            control_layout.addLayout(controls)
+            content_layout.addWidget(control_card)
 
-            log_box = QGroupBox("运行日志")
-            log_layout = QVBoxLayout(log_box)
-            log_layout.addWidget(self.log)
-            layout.addWidget(log_box, 1)
+            paths_card = self._card()
+            paths_layout = QVBoxLayout(paths_card)
+            paths_layout.setContentsMargins(17, 15, 17, 15)
+            paths_layout.setSpacing(10)
+            paths_header = QHBoxLayout()
+            paths_title = QLabel("连接配置")
+            paths_title.setObjectName("sectionTitle")
+            paths_hint = QLabel("选择 Codex 数据目录和可执行程序")
+            paths_hint.setObjectName("sectionHint")
+            paths_header.addWidget(paths_title)
+            paths_header.addSpacing(10)
+            paths_header.addWidget(paths_hint)
+            paths_header.addStretch(1)
+            paths_layout.addLayout(paths_header)
+            paths = QGridLayout()
+            paths.setHorizontalSpacing(12)
+            paths.setVerticalSpacing(8)
+            paths.setColumnMinimumWidth(0, 84)
+            paths.setColumnStretch(1, 1)
+            paths.addWidget(self._field_label("Codex 主目录"), 0, 0)
+            paths.addWidget(self._path_widget(self.codex_home, directory=True), 0, 1)
+            paths.addWidget(self._field_label("状态文件"), 1, 0)
+            paths.addWidget(self._path_widget(self.state_file), 1, 1)
+            paths.addWidget(self._field_label("Codex 程序"), 2, 0)
+            paths.addWidget(self._path_widget(self.codex, executable=True), 2, 1)
+            paths_layout.addLayout(paths)
+            content_layout.addWidget(paths_card)
+
+            options_card = self._card()
+            options_layout = QVBoxLayout(options_card)
+            options_layout.setContentsMargins(17, 15, 17, 15)
+            options_layout.setSpacing(10)
+            options_header = QHBoxLayout()
+            options_title = QLabel("运行选项")
+            options_title.setObjectName("sectionTitle")
+            options_hint = QLabel("按需调整发送内容和扫描范围")
+            options_hint.setObjectName("sectionHint")
+            options_header.addWidget(options_title)
+            options_header.addSpacing(10)
+            options_header.addWidget(options_hint)
+            options_header.addStretch(1)
+            options_layout.addLayout(options_header)
+
+            fields = QHBoxLayout()
+            fields.setSpacing(10)
+            self.message.setPlaceholderText("continue")
+            self.interval.setSuffix(" 秒")
+            self.recover_hours.setSuffix(" 小时")
+            fields.addWidget(self._field_column("发送内容", self.message), 2)
+            fields.addWidget(self._field_column("扫描间隔", self.interval), 1)
+            fields.addWidget(self._field_column("恢复时长", self.recover_hours), 1)
+            options_layout.addLayout(fields)
+            checks = QGridLayout()
+            checks.setHorizontalSpacing(22)
+            checks.setVerticalSpacing(2)
+            checks.addWidget(self.recover, 0, 0)
+            checks.addWidget(self.all_sessions, 0, 1)
+            checks.addWidget(self.include_subagents, 1, 0)
+            checks.addWidget(self.dry_run, 1, 1)
+            options_layout.addLayout(checks)
+            content_layout.addWidget(options_card)
+
+            log_card = self._card()
+            log_layout = QVBoxLayout(log_card)
+            log_layout.setContentsMargins(17, 15, 17, 15)
+            log_layout.setSpacing(9)
+            log_header = QHBoxLayout()
+            log_title = QLabel("运行日志")
+            log_title.setObjectName("sectionTitle")
+            log_hint = QLabel("实时显示 watcher 输出")
+            log_hint.setObjectName("sectionHint")
+            clear_button = QPushButton("清空")
+            clear_button.setObjectName("quietButton")
+            clear_button.clicked.connect(self.log.clear)
+            log_header.addWidget(log_title)
+            log_header.addSpacing(10)
+            log_header.addWidget(log_hint)
+            log_header.addStretch(1)
+            log_header.addWidget(clear_button)
+            log_layout.addLayout(log_header)
+            self.log.setPlaceholderText("启动监控后，运行信息会显示在这里。")
+            self.log.setMinimumHeight(150)
+            log_layout.addWidget(self.log, 1)
+            content_layout.addWidget(log_card, 1)
+            layout.addWidget(content, 1)
+
+        @staticmethod
+        def _card() -> QFrame:
+            card = QFrame()
+            card.setObjectName("card")
+            return card
+
+        @staticmethod
+        def _field_label(text: str) -> QLabel:
+            label = QLabel(text)
+            label.setObjectName("fieldLabel")
+            return label
+
+        def _field_column(self, label_text: str, widget: QWidget) -> QWidget:
+            container = QWidget()
+            column = QVBoxLayout(container)
+            column.setContentsMargins(0, 0, 0, 0)
+            column.setSpacing(5)
+            column.addWidget(self._field_label(label_text))
+            column.addWidget(widget)
+            return container
+
+        @staticmethod
+        def _nav_item(text: str, *, active: bool = False) -> QLabel:
+            label = QLabel(text)
+            label.setObjectName("navItemActive" if active else "navItem")
+            return label
 
         def _path_widget(
             self,
@@ -377,6 +768,10 @@ if QT_IMPORT_ERROR is None:
                 self._append_log(f"启动失败：{process.errorString()}")
                 self._reset_watcher_state()
                 QMessageBox.critical(self, "无法启动", process.errorString())
+                return
+            self.start_button.setEnabled(False)
+            self.stop_button.setEnabled(True)
+            self._set_status("运行中", "running")
 
         def _stop(self) -> None:
             if self.stop_process and self.stop_process.state() != QProcess.ProcessState.NotRunning:
@@ -402,6 +797,9 @@ if QT_IMPORT_ERROR is None:
             if not process.waitForStarted(3000):
                 self._append_log(f"停止失败：{process.errorString()}")
                 self.stop_process = None
+                self.stop_button.setEnabled(True)
+            else:
+                self.stop_button.setEnabled(False)
 
         @staticmethod
         def _read_output(process: QProcess) -> None:
@@ -411,10 +809,22 @@ if QT_IMPORT_ERROR is None:
                 if isinstance(window, CapacityWatcherApp):
                     window._append_log(data.rstrip("\n"))
 
+        def _set_status(self, text: str, state: str) -> None:
+            self.status.setText(text)
+            self.status.setProperty("state", state)
+            style = self.status.style()
+            style.unpolish(self.status)
+            style.polish(self.status)
+            if hasattr(self, "side_status_value"):
+                self.side_status_value.setText("运行中" if state == "running" else text)
+
         def _watcher_finished(self, exit_code: int, _status: QProcess.ExitStatus) -> None:
             if self.process is not None:
                 self._read_output(self.process)
-            self.status.setText("已停止" if exit_code == 0 else f"已退出（代码 {exit_code}）")
+            if exit_code == 0:
+                self._set_status("已停止", "idle")
+            else:
+                self._set_status(f"已退出（代码 {exit_code}）", "error")
             self.start_button.setEnabled(True)
             self.stop_button.setEnabled(False)
             self.process = None
@@ -442,7 +852,7 @@ if QT_IMPORT_ERROR is None:
             self.running_settings = None
             self.start_button.setEnabled(True)
             self.stop_button.setEnabled(False)
-            self.status.setText("启动失败")
+            self._set_status("启动失败", "error")
 
         def _maybe_close(self) -> None:
             if self.close_requested and self.process is None and self.stop_process is None:
