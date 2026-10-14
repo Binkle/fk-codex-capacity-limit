@@ -106,6 +106,10 @@ def test_runtime_path_includes_codex_parent(tmp_path):
     assert str(executable.parent) in path.split(os.pathsep)
 
 
+def test_application_icon_is_available_from_source_tree():
+    assert gui.asset_path(gui.APP_ICON_NAME).is_file()
+
+
 def test_macos_system_language_uses_apple_languages(monkeypatch):
     monkeypatch.setattr(i18n.sys, "platform", "darwin")
     monkeypatch.setattr(

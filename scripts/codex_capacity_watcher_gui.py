@@ -13,6 +13,8 @@ if str(SCRIPT_DIR) not in sys.path:
 
 from codex_capacity_watcher_gui_config import (  # noqa: E402
     APP_TITLE,
+    APP_ICON_NAME,
+    asset_path,
     LANGUAGE_FILE,
     SCRIPT_PATH,
     SETTINGS_FILE,
@@ -38,6 +40,7 @@ _path = path_value
 _worker_command = worker_command
 
 try:
+    from PySide6.QtGui import QIcon
     from PySide6.QtWidgets import QApplication
 except ImportError as error:  # Keep worker mode available without GUI dependencies.
     QApplication = None  # type: ignore[assignment]
@@ -55,6 +58,9 @@ def run_gui() -> int:
         raise SystemExit("GUI requires PySide6. Install it with: python3 -m pip install PySide6")
     app = QApplication(sys.argv)
     app.setApplicationName(APP_TITLE)
+    icon = asset_path(APP_ICON_NAME)
+    if icon.is_file():
+        app.setWindowIcon(QIcon(str(icon)))
     app.setStyle("Fusion")
     window = CapacityWatcherApp()
     window.show()

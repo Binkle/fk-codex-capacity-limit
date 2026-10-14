@@ -7,7 +7,7 @@ from pathlib import Path
 from typing import Any
 
 from PySide6.QtCore import QProcess, QProcessEnvironment, QTimer, Qt
-from PySide6.QtGui import QCloseEvent
+from PySide6.QtGui import QCloseEvent, QIcon
 from PySide6.QtWidgets import (
     QApplication,
     QCheckBox,
@@ -22,6 +22,7 @@ from PySide6.QtWidgets import (
 )
 
 from codex_capacity_watcher_gui_config import (
+    APP_ICON_NAME,
     SETTINGS_FILE,
     SESSION_TYPE_KEYS,
     load_settings,
@@ -30,6 +31,7 @@ from codex_capacity_watcher_gui_config import (
     normalise_lookback_hours,
     normalise_session_types,
     path_value,
+    asset_path,
     runtime_path,
     save_settings,
     save_language,
@@ -47,6 +49,9 @@ class CapacityWatcherWindow(QMainWindow):
     def __init__(self) -> None:
         super().__init__()
         self.setWindowTitle("Codex Capacity Watcher")
+        icon = asset_path(APP_ICON_NAME)
+        if icon.is_file():
+            self.setWindowIcon(QIcon(str(icon)))
         self.settings = load_settings()
         self.language = load_language()
         self.stylesheet = APP_STYLESHEET

@@ -30,35 +30,48 @@ jobs:
 
       - name: Build macOS application
         if: runner.os == 'macOS'
-        run: >-
-          python -m PyInstaller --noconfirm --clean --windowed
-          --name CodexCapacityWatcher --hidden-import codex_capacity_watcher
-          scripts/codex_capacity_watcher_gui.py
+        run: sh packaging/build-macos.sh
 
-      - name: Package macOS application with symlinks preserved
-        if: runner.os == 'macOS'
-        run: >-
-          ditto -c -k --sequesterRsrc --keepParent
-          dist/CodexCapacityWatcher.app
-          dist/CodexCapacityWatcher-macos.zip
-
-      - name: Build Windows application
+      - name: Install NSIS
         if: runner.os == 'Windows'
-        run: >-
-          python -m PyInstaller --noconfirm --clean --onefile --windowed
-          --name CodexCapacityWatcher --hidden-import codex_capacity_watcher
-          scripts/codex_capacity_watcher_gui.py
+        run: choco install nsis --no-progress -y
+
+      - name: Build Windows installer
+        if: runner.os == 'Windows'
+        run: cmd /c packaging\build-windows.bat
 
       - name: Upload macOS application
         if: runner.os == 'macOS'
         uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.artifact }}
-          path: dist/CodexCapacityWatcher-macos.zip
+          path: |
+            dist/CodexCapacityWatcher-macos.dmg
+            dist/CodexCapacityWatcher-macos.zip
 
       - name: Upload Windows application
         if: runner.os == 'Windows'
         uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.artifact }}
-          path: dist/CodexCapacityWatcher.exe
+          path: dist/CodexCapacityWatcher-Setup.exe
+
+  release:
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Download desktop artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: release-assets
+
+      - name: Create GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" release-assets/*/* \
+            --title "Codex Capacity Watcher $GITHUB_REF_NAME" \
+            --generate-notes

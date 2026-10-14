@@ -109,11 +109,16 @@ sh packaging/build-macos.sh
 packaging\build-windows.bat
 ```
 
-macOS 构建结果包括 `dist/CodexCapacityWatcher.app` 和可分发的
-`dist/CodexCapacityWatcher-macos.zip`，Windows 构建结果是
-`dist\CodexCapacityWatcher.exe`。macOS 请优先分发 zip 并在本机解压；它会保留
-Qt/PySide6 所需的符号链接，避免使用普通复制工具后体积膨胀。PyInstaller 会把
-GUI 和监控脚本一起打包，使用者不需要再手动运行 Python 脚本。
+macOS 构建结果包括可双击安装的 `dist/CodexCapacityWatcher-macos.dmg`、
+可分发的 `dist/CodexCapacityWatcher-macos.zip` 和应用本体；Windows 构建结果是
+带安装向导、开始菜单快捷方式和卸载入口的
+`dist\CodexCapacityWatcher-Setup.exe`。macOS 请优先分发 dmg 或 zip；zip 会保留
+Qt/PySide6 所需的符号链接，避免使用普通复制工具后体积膨胀。应用图标已经内置
+到 macOS 应用、Windows 安装程序和运行窗口中。PyInstaller 会把 GUI 和监控脚本
+一起打包，使用者不需要再手动运行 Python 脚本。
+
+Windows 构建需要安装 [NSIS](https://nsis.sourceforge.io/Download)，macOS
+构建需要系统自带的 `hdiutil`、`ditto` 和 `iconutil`。
 
 仓库还提供了 `.github/workflows/build-desktop.yml`。可以在 GitHub 的
 Actions 页面手动运行它，或者推送 `v*` 标签，生成可下载的 macOS 和

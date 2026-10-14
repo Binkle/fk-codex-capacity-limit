@@ -16,6 +16,7 @@ from codex_capacity_watcher_i18n import (
 
 
 APP_TITLE = "Codex Capacity Watcher"
+APP_ICON_NAME = "codex-capacity-watcher-icon.png"
 SETTINGS_FILE = Path.home() / ".codex" / "capacity-watcher-gui.json"
 LANGUAGE_FILE = Path.home() / ".codex" / "capacity-watcher-language.json"
 SCRIPT_PATH = Path(__file__).with_name("codex_capacity_watcher.py")
@@ -122,6 +123,18 @@ def save_language(language: str, path: Path = LANGUAGE_FILE) -> None:
         json.dumps({"language": normalize_language(language)}, ensure_ascii=False, indent=2) + "\n",
         encoding="utf-8",
     )
+
+
+def asset_path(name: str) -> Path:
+    """Resolve a bundled asset in both source and frozen applications."""
+    frozen_root = getattr(sys, "_MEIPASS", None)
+    candidates = []
+    if frozen_root:
+        candidates.append(Path(frozen_root) / "assets" / name)
+    source_root = Path(__file__).resolve().parents[1]
+    candidates.append(source_root / "packaging" / "assets" / name)
+    candidates.append(Path(__file__).resolve().parent / "assets" / name)
+    return next((candidate for candidate in candidates if candidate.is_file()), candidates[0])
 
 
 def tool_path_candidates() -> list[Path]:
