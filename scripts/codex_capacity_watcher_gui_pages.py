@@ -139,6 +139,14 @@ def build_page_header(host: UiHost) -> QHBoxLayout:
     heading.addWidget(host.page_title)
     heading.addWidget(host.page_subtitle)
     header.addLayout(heading, 1)
+    language_label = field_label(host.t("field.language"))
+    host.language_combo = QComboBox()
+    for language in SUPPORTED_LANGUAGES:
+        host.language_combo.addItem(host.t(f"language.{language}"), language)
+    host.language_combo.setCurrentIndex(SUPPORTED_LANGUAGES.index(host.language))
+    host.language_combo.currentIndexChanged.connect(host._language_changed)
+    header.addWidget(language_label, 0, Qt.AlignmentFlag.AlignTop)
+    header.addWidget(host.language_combo, 0, Qt.AlignmentFlag.AlignTop)
     host.status.setObjectName("statusPill")
     host.status.setMinimumWidth(84)
     host.status.setAlignment(Qt.AlignmentFlag.AlignCenter)
@@ -242,14 +250,6 @@ def build_paths_card(host: UiHost) -> QFrame:
     fields.addWidget(path_widget(host, host.state_file), 1, 1)
     fields.addWidget(field_label(host.t("field.codex")), 2, 0)
     fields.addWidget(path_widget(host, host.codex, executable=True), 2, 1)
-    fields.addWidget(field_label(host.t("field.language")), 3, 0)
-    host.language_combo = QComboBox()
-    for language in SUPPORTED_LANGUAGES:
-        host.language_combo.addItem(host.t(f"language.{language}"), language)
-    current = SUPPORTED_LANGUAGES.index(host.language)
-    host.language_combo.setCurrentIndex(current)
-    host.language_combo.currentIndexChanged.connect(host._language_changed)
-    fields.addWidget(host.language_combo, 3, 1)
     layout.addLayout(fields)
     return paths_card
 

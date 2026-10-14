@@ -1,4 +1,6 @@
 import importlib.util
+import json
+import os
 from pathlib import Path
 
 GUI_PATH = Path(__file__).parents[1] / "codex_capacity_watcher_gui.py"
@@ -80,6 +82,26 @@ def test_settings_round_trip(tmp_path):
 
     assert gui.load_settings(path)["interval"] == "3"
     assert gui.load_settings(path)["message"] == "continue"
+
+
+def test_language_preference_is_stored_separately(tmp_path):
+    runtime_path = tmp_path / "settings.json"
+    language_path = tmp_path / "language.json"
+    settings = gui.default_settings()
+    settings["language"] = "en-US"
+
+    gui.save_settings(settings, runtime_path)
+    gui.save_language("en-US", language_path)
+
+    assert "language" not in json.loads(runtime_path.read_text(encoding="utf-8"))
+    assert gui.load_language(language_path) == "en-US"
+
+
+def test_runtime_path_includes_codex_parent(tmp_path):
+    executable = tmp_path / "node-bin" / "codex"
+    path = gui.runtime_path(str(executable))
+
+    assert str(executable.parent) in path.split(os.pathsep)
 
 
 def test_new_defaults_select_all_session_types():

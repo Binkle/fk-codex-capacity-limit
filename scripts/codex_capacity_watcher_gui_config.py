@@ -10,7 +10,6 @@ from pathlib import Path
 from typing import Any, Iterable
 
 from codex_capacity_watcher_i18n import (
-    LANGUAGE_ZH,
     normalize_language,
     system_language,
 )
@@ -18,6 +17,7 @@ from codex_capacity_watcher_i18n import (
 
 APP_TITLE = "Codex Capacity Watcher"
 SETTINGS_FILE = Path.home() / ".codex" / "capacity-watcher-gui.json"
+LANGUAGE_FILE = Path.home() / ".codex" / "capacity-watcher-language.json"
 SCRIPT_PATH = Path(__file__).with_name("codex_capacity_watcher.py")
 SESSION_TYPE_KEYS = ("cli", "vscode", "desktop", "exec")
 
@@ -33,7 +33,14 @@ def default_state_file(codex_home: Path | None = None) -> Path:
 
 
 def default_codex_executable() -> str:
-    return shutil.which("codex") or ("codex.exe" if os.name == "nt" else "codex")
+    found = shutil.which("codex")
+    if found:
+        return found
+    for directory in tool_path_candidates():
+        candidate = directory / ("codex.exe" if os.name == "nt" else "codex")
+        if candidate.is_file() and os.access(candidate, os.X_OK):
+            return str(candidate)
+    return "codex.exe" if os.name == "nt" else "codex"
 
 
 def default_settings() -> dict[str, Any]:
@@ -50,7 +57,6 @@ def default_settings() -> dict[str, Any]:
         "session_types": list(SESSION_TYPE_KEYS),
         "include_subagents": False,
         "dry_run": False,
-        "language": system_language(),
     }
 
 
@@ -85,13 +91,75 @@ def load_settings(path: Path | None = None) -> dict[str, Any]:
         settings["session_types"] = list(SESSION_TYPE_KEYS) if bool(settings["all_sessions"]) else ["cli"]
     settings["session_types"] = normalise_session_types(settings["session_types"])
     settings["all_sessions"] = set(settings["session_types"]) == set(SESSION_TYPE_KEYS)
-    settings["language"] = normalize_language(settings.get("language", system_language()))
     return settings
 
 
 def save_settings(settings: dict[str, Any], path: Path = SETTINGS_FILE) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps(settings, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    runtime_settings = {key: value for key, value in settings.items() if key != "language"}
+    path.write_text(json.dumps(runtime_settings, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+
+
+def load_language(path: Path = LANGUAGE_FILE) -> str:
+    try:
+        value = json.loads(path.read_text(encoding="utf-8"))
+        if isinstance(value, dict) and "language" in value:
+            return normalize_language(value["language"])
+    except (OSError, json.JSONDecodeError):
+        pass
+    try:
+        legacy = json.loads(SETTINGS_FILE.read_text(encoding="utf-8"))
+        if isinstance(legacy, dict) and "language" in legacy:
+            return normalize_language(legacy["language"])
+    except (OSError, json.JSONDecodeError):
+        pass
+    return system_language()
+
+
+def save_language(language: str, path: Path = LANGUAGE_FILE) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(
+        json.dumps({"language": normalize_language(language)}, ensure_ascii=False, indent=2) + "\n",
+        encoding="utf-8",
+    )
+
+
+def tool_path_candidates() -> list[Path]:
+    home = Path.home()
+    candidates = [
+        home / ".nvm" / "versions" / "node",
+        home / ".volta" / "bin",
+        home / ".local" / "bin",
+        Path("/opt/homebrew/bin"),
+        Path("/usr/local/bin"),
+        Path("/usr/bin"),
+    ]
+    result: list[Path] = []
+    for candidate in candidates:
+        if candidate.name == "node" and candidate.is_dir():
+            result.extend(sorted((item / "bin" for item in candidate.iterdir() if item.is_dir()), reverse=True))
+        else:
+            result.append(candidate)
+    if os.name == "nt":
+        result.extend(
+            [
+                Path(os.environ.get("APPDATA", "")) / "npm",
+                Path(os.environ.get("LOCALAPPDATA", "")) / "Programs" / "nodejs",
+            ]
+        )
+    return [path for path in result if str(path) and path.is_dir()]
+
+
+def runtime_path(codex: str | None = None) -> str:
+    entries: list[str] = []
+    if codex:
+        executable = Path(codex).expanduser()
+        if executable.parent != Path("."):
+            entries.append(str(executable.parent))
+    entries.extend(os.environ.get("PATH", "").split(os.pathsep))
+    entries.extend(str(path) for path in tool_path_candidates())
+    unique = list(dict.fromkeys(entry for entry in entries if entry))
+    return os.pathsep.join(unique)
 
 
 def path_value(value: str) -> Path:

@@ -93,8 +93,8 @@ Codex/state-file selectors, the follow-up message, recovery, independent
 checkboxes for terminal CLI, VS Code, ChatGPT/Codex desktop, and `codex exec`,
 the startup look-back window, preview mode, and a live log window. The
 interface supports English and Chinese, follows the system language by
-default, and lets you switch language in Settings. All four session types are
-selected in a new installation.
+default, and lets you switch language from the application header. All four
+session types are selected in a new installation.
 
 On macOS, double-click `run-codex-capacity-watcher.command`. On Windows,
 double-click `run-codex-capacity-watcher.bat`. The source launcher requires

@@ -6,7 +6,7 @@ import os
 from pathlib import Path
 from typing import Any
 
-from PySide6.QtCore import QProcess, QTimer, Qt
+from PySide6.QtCore import QProcess, QProcessEnvironment, QTimer, Qt
 from PySide6.QtGui import QCloseEvent
 from PySide6.QtWidgets import (
     QApplication,
@@ -25,11 +25,14 @@ from codex_capacity_watcher_gui_config import (
     SETTINGS_FILE,
     SESSION_TYPE_KEYS,
     load_settings,
+    load_language,
     normalise_interval,
     normalise_lookback_hours,
     normalise_session_types,
     path_value,
+    runtime_path,
     save_settings,
+    save_language,
     watcher_arguments,
     worker_command,
 )
@@ -45,7 +48,7 @@ class CapacityWatcherWindow(QMainWindow):
         super().__init__()
         self.setWindowTitle("Codex Capacity Watcher")
         self.settings = load_settings()
-        self.language = normalize_language(self.settings.get("language"))
+        self.language = load_language()
         self.stylesheet = APP_STYLESHEET
         self.process: QProcess | None = None
         self.stop_process: QProcess | None = None
@@ -133,8 +136,8 @@ class CapacityWatcherWindow(QMainWindow):
             self.settings = self._settings_from_form()
             save_settings(self.settings)
         except (OSError, ValueError):
-            self.settings["language"] = self.language
-            save_settings(self.settings)
+            pass
+        save_language(self.language)
         self._rebuild_ui()
 
     def _rebuild_ui(self) -> None:
@@ -180,7 +183,6 @@ class CapacityWatcherWindow(QMainWindow):
             "session_types": session_types,
             "include_subagents": self.include_subagents.isChecked(),
             "dry_run": self.dry_run.isChecked(),
-            "language": self.language,
         }
 
     def _save(self) -> bool:
@@ -268,6 +270,9 @@ class CapacityWatcherWindow(QMainWindow):
         process.errorOccurred.connect(self._watcher_error)
         process.setProgram(command[0])
         process.setArguments(command[1:])
+        process_environment = QProcessEnvironment.systemEnvironment()
+        process_environment.insert("PATH", runtime_path(str(settings.get("codex", ""))))
+        process.setProcessEnvironment(process_environment)
         self.process = process
         process.start()
         if not process.waitForStarted(3000):
@@ -296,6 +301,9 @@ class CapacityWatcherWindow(QMainWindow):
         process.errorOccurred.connect(self._stop_error)
         process.setProgram(command[0])
         process.setArguments(command[1:])
+        process_environment = QProcessEnvironment.systemEnvironment()
+        process_environment.insert("PATH", runtime_path(str(settings.get("codex", ""))))
+        process.setProcessEnvironment(process_environment)
         self.stop_process = process
         process.start()
         if not process.waitForStarted(3000):
