@@ -5,8 +5,12 @@ SCRIPT_DIR=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
 PROJECT_ROOT=$(CDPATH= cd -- "$SCRIPT_DIR/.." && pwd)
 cd "$PROJECT_ROOT"
 
-python3 -m pip install --upgrade pyinstaller PySide6
-python3 -m PyInstaller \
+PYTHON_BIN=${PYTHON_BIN:-python3}
+if ! "$PYTHON_BIN" -c 'import PyInstaller, PySide6' >/dev/null 2>&1; then
+  "$PYTHON_BIN" -m pip install --upgrade pyinstaller PySide6
+fi
+
+"$PYTHON_BIN" -m PyInstaller \
   --noconfirm \
   --clean \
   --windowed \
