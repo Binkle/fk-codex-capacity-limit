@@ -46,7 +46,7 @@ if not exist "%MAKENSIS%" (
 )
 echo Using NSIS: %MAKENSIS%
 echo [build] Running NSIS installer compiler
-"%MAKENSIS%" packaging\windows-installer.nsi
+"%MAKENSIS%" /DPROJECT_ROOT="%CD%" packaging\windows-installer.nsi
 if errorlevel 1 (
   echo NSIS failed to build the installer.
   exit /b 1

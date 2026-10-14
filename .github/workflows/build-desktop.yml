@@ -57,6 +57,14 @@ jobs:
             dist/CodexCapacityWatcher-Setup.exe
           if-no-files-found: ignore
 
+      - name: Report Windows build log
+        if: failure() && runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          if (Test-Path dist/windows-build.log) {
+            Get-Content dist/windows-build.log | ForEach-Object { Write-Host "::error title=Windows packaging log::$_" }
+          }
+
       - name: Upload macOS application
         if: runner.os == 'macOS'
         uses: actions/upload-artifact@v4
