@@ -1,0 +1,19 @@
+<WixLocalization xmlns="http://wixtoolset.org/schemas/v4/wxl" Culture="zh-CN" Codepage="936">
+  <String Id="Language" Value="2052" />
+  <String Id="Codepage" Value="936" />
+  <String Id="SetupTitle" Value="Codex Capacity Watcher 安装" />
+  <String Id="WelcomeSubtitle" Value="安装应用，随时监测并继续你的 Codex 会话。" />
+  <String Id="WelcomeHint" Value="点击「下一步」，选择位置并安装。" />
+  <String Id="FolderLabel" Value="安装目录" />
+  <UI Dialog="WatcherWelcomeDlg" Control="Subtitle" X="90" />
+  <UI Dialog="WatcherWelcomeDlg" Control="FolderLabel" X="262" />
+  <UI Dialog="WatcherWelcomeDlg" Control="Hint" X="110" />
+  <String Id="Downgrade" Value="已安装更高版本。请先卸载，再安装此版本。" />
+  <String Id="NsisPresent" Value="已安装 EXE 版本。请先在 Windows 设置中卸载，再使用 MSI 安装包。" />
+  <String Id="InstallDirDlgTitle" Value="{\WixUI_Font_Title}选择安装位置" />
+  <String Id="InstallDirDlgDescription" Value="使用推荐目录，也可以选择其他位置。" />
+  <String Id="ExitDialogTitle" Value="{\WixUI_Font_Bigger}操作完成" />
+  <String Id="ExitDialogDescription" Value="安装程序已完成操作，点击「完成」关闭窗口。" />
+  <String Id="MaintenanceWelcomeDlgTitle" Value="{\WixUI_Font_Bigger}管理已安装的应用" />
+  <String Id="MaintenanceWelcomeDlgDescription" Value="修复应用或将其从此电脑移除，个人设置和会话数据会保留。" />
+</WixLocalization>

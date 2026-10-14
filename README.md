@@ -128,16 +128,42 @@ packaging\build-windows.bat
 The macOS build creates an installable
 `dist/CodexCapacityWatcher-macos.dmg`, a distributable
 `dist/CodexCapacityWatcher-macos.zip`, and the app bundle. The Windows build
-creates `dist\CodexCapacityWatcher-Setup.exe` with an installer, Start menu
-shortcut, desktop shortcut, and uninstaller. Distribute the macOS DMG or zip;
+creates a guided EXE and two localized Windows Installer packages:
+
+- `dist\CodexCapacityWatcher-Setup.exe`: follows the Windows display language
+  (English or Simplified Chinese), with an optional desktop shortcut.
+- `dist\CodexCapacityWatcher-Setup-en-US.msi`: English installation and maintenance UI.
+- `dist\CodexCapacityWatcher-Setup-zh-CN.msi`: Simplified Chinese installation and maintenance UI.
+
+Both formats let you choose the installation folder, create a Start menu shortcut,
+and provide an uninstall entry in Windows Settings. MSI also supports repair and
+standard `msiexec` deployment. Choose one format; uninstall it before switching
+between EXE and MSI. Installation requires administrator privileges. The welcome
+page follows the macOS installer's pale background, cards, and directional guide.
+
+![Windows installer](docs/images/windows-installer-en.png)
+
+Distribute the macOS DMG or zip;
 the zip preserves the Qt/PySide6 symlinks so the bundle does not expand when it
 is copied with a generic file tool. The application icon is embedded in the
 macOS app, Windows installer, and runtime window. PyInstaller packages the
 watcher and GUI together, so the person using the finished application does
 not need to run the Python script manually.
 
-The Windows build requires [NSIS](https://nsis.sourceforge.io/Download). The
-macOS build uses the system `hdiutil`, `ditto`, and `iconutil` tools and installs
+The Windows build requires [NSIS](https://nsis.sourceforge.io/Download) and the
+.NET 8 SDK. The MSI build restores the pinned WiX 5.0.2 tool and UI extension.
+Use `packaging\build-windows.bat exe` or `packaging\build-windows.bat msi` to build
+only one format. Add `--skip-app` as the second argument to reuse an existing
+`dist\CodexCapacityWatcher.exe` while editing the installer. Normal builds always
+rebuild the application. The editable vector artwork is in `packaging/assets/windows-*.svg`.
+For an unattended MSI install from an elevated terminal, use
+`msiexec /i CodexCapacityWatcher-Setup-en-US.msi /qn /norestart`; pass
+`INSTALLFOLDER="C:\Apps\CodexCapacityWatcher"` to choose a directory.
+MSI upgrades, including switching between English and Chinese packages, keep the
+existing installation folder unless you explicitly choose another one. Uninstalling
+either format preserves your personal settings and session data.
+
+The macOS build uses the system `hdiutil`, `ditto`, and `iconutil` tools and installs
 `dmgbuild` automatically. The DMG includes an Applications shortcut and a bilingual
 drag-to-install background. The build verifies the finished image's app signature,
 bundle symlinks, installation shortcut, and Finder layout before reporting success.
@@ -150,7 +176,7 @@ push a `v*` tag, to produce downloadable macOS and Windows artifacts.
 
 The watcher stores the read offset for each rollout file and records queued events in its state file. When it detects a new capacity error, it extracts the session ID and turn ID, then calls `codex queue` to send the follow-up to the original session. Failed sends are not marked as processed, so a later scan can retry them.
 
-The watcher records its process ID in the PID file while it is running. `--stop` sends that process a graceful `SIGTERM`; the watcher cleans up the PID file before exiting. If no valid PID file exists, `--stop` also looks for Python processes running this script, which allows it to stop watchers created by older versions. A normal restart skips events appended while the watcher was stopped and begins at the current end of each rollout file. Use `--recover` to inspect existing history once at startup; after that recovery pass, the watcher follows only new events. Use `--state-file` and `--pid-file` to store state and process metadata in different locations.
+The watcher records its process ID in the PID file while it is running. On macOS/Linux, `--stop` sends that process a graceful `SIGTERM`; the watcher cleans up the PID file before exiting. On Windows, it terminates the process, waits for it to exit, and removes the matching PID file. On macOS/Linux, if no valid PID file exists, `--stop` also looks for Python processes running this script, which allows it to stop watchers created by older versions. A normal restart skips events appended while the watcher was stopped and begins at the current end of each rollout file. Use `--recover` to inspect existing history once at startup; after that recovery pass, the watcher follows only new events. Use `--state-file` and `--pid-file` to store state and process metadata in different locations.
 
 ## Tests
 

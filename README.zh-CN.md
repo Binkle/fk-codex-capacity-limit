@@ -123,14 +123,34 @@ packaging\build-windows.bat
 
 macOS 构建结果包括可双击安装的 `dist/CodexCapacityWatcher-macos.dmg`、
 可分发的 `dist/CodexCapacityWatcher-macos.zip` 和应用本体；Windows 构建结果是
-带安装向导、开始菜单快捷方式和卸载入口的
-`dist\CodexCapacityWatcher-Setup.exe`。macOS 请优先分发 dmg 或 zip；zip 会保留
+以下三种安装包：
+
+- `dist\CodexCapacityWatcher-Setup.exe`：跟随 Windows 显示语言，支持中文和英文，可选择创建桌面快捷方式。
+- `dist\CodexCapacityWatcher-Setup-zh-CN.msi`：中文安装与维护界面。
+- `dist\CodexCapacityWatcher-Setup-en-US.msi`：英文安装与维护界面。
+
+两种格式都支持选择安装目录、创建开始菜单快捷方式，并在 Windows 设置中提供卸载入口。
+MSI 还支持修复与标准 `msiexec` 静默部署。请选择一种格式；切换 EXE 与 MSI 前先卸载旧版本。
+安装需要管理员权限。欢迎页沿用 macOS 版的浅色背景、卡片布局和方向引导。
+
+![Windows 安装向导](docs/images/windows-installer-zh.png)
+
+macOS 请优先分发 dmg 或 zip；zip 会保留
 Qt/PySide6 所需的符号链接，避免使用普通复制工具后体积膨胀。应用图标已经内置
 到 macOS 应用、Windows 安装程序和运行窗口中。PyInstaller 会把 GUI 和监控脚本
 一起打包，使用者不需要再手动运行 Python 脚本。
 
-Windows 构建需要安装 [NSIS](https://nsis.sourceforge.io/Download)，macOS
-构建使用系统自带的 `hdiutil`、`ditto` 和 `iconutil`，脚本会自动安装 `dmgbuild`。
+Windows 构建需要安装 [NSIS](https://nsis.sourceforge.io/Download) 和 .NET 8 SDK，
+MSI 构建会自动恢复固定版本的 WiX 5.0.2 及其 UI 扩展。
+只构建一种格式可运行 `packaging\build-windows.bat exe` 或 `packaging\build-windows.bat msi`。
+调整安装页面时，可在第二个参数添加 `--skip-app`，复用已有应用 EXE；正常构建会重新打包应用。
+可编辑的矢量素材位于 `packaging/assets/windows-*.svg`。
+在管理员终端中运行 `msiexec /i CodexCapacityWatcher-Setup-zh-CN.msi /qn /norestart` 可静默安装，
+添加 `INSTALLFOLDER="C:\Apps\CodexCapacityWatcher"` 可指定目录。
+MSI 覆盖升级（包括中英文包之间切换）会保留原安装目录，除非明确指定新位置。
+两种格式卸载时都会保留个人设置和会话数据。
+
+macOS 构建使用系统自带的 `hdiutil`、`ditto` 和 `iconutil`，脚本会自动安装 `dmgbuild`。
 DMG 内含 Applications 快捷入口和中英双语拖拽安装背景；构建结束前会挂载成品，
 检查应用签名、包内符号链接、安装快捷入口和 Finder 窗口布局。
 
@@ -140,7 +160,7 @@ Windows 应用构建产物。
 
 ## 工作方式
 
-脚本会保存每个 rollout 文件的读取位置，并将已发送的事件写入状态文件。检测到新的容量错误后，它会提取 session ID 和 turn ID，调用 `codex queue` 向原会话发送消息。发送失败时不会把事件标记为已处理，下一轮扫描可以再次尝试。运行期间，脚本会将进程号写入 PID 文件；`--stop` 会发送 `SIGTERM` 请求优雅退出，退出时自动清理 PID 文件。如果没有有效的 PID 文件，`--stop` 还会查找正在运行的旧版本脚本进程并停止它们。
+脚本会保存每个 rollout 文件的读取位置，并将已发送的事件写入状态文件。检测到新的容量错误后，它会提取 session ID 和 turn ID，调用 `codex queue` 向原会话发送消息。发送失败时不会把事件标记为已处理，下一轮扫描可以再次尝试。运行期间，脚本会将进程号写入 PID 文件；在 macOS/Linux 上，`--stop` 发送 `SIGTERM` 请求优雅退出，由监控进程清理 PID 文件；在 Windows 上，它终止进程并等待退出，再清理匹配的 PID 文件。如果 macOS/Linux 上没有有效的 PID 文件，`--stop` 还会查找正在运行的旧版本脚本进程并停止它们。
 
 普通重启会跳过监控停止期间追加的历史事件，从每个 rollout 文件的当前末尾开始监听。只有显式使用 `--recover` 时，脚本才会在启动时检查已有历史记录；恢复检查完成后也只监听新事件。状态文件和 PID 文件可以分别通过 `--state-file`、`--pid-file` 指定到其他位置。
 

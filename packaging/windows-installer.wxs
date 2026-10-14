@@ -1,0 +1,54 @@
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs">
+  <Package Name="Codex Capacity Watcher" Manufacturer="Binkle" Version="0.1.8"
+           Language="!(loc.Language)" Codepage="!(loc.Codepage)" Scope="perMachine"
+           UpgradeCode="93BD3076-4F30-41C5-84BC-13415EC2DF69" InstallerVersion="500">
+    <SummaryInformation Description="Codex Capacity Watcher" />
+    <MajorUpgrade AllowSameVersionUpgrades="yes" IgnoreLanguage="yes"
+                  Schedule="afterInstallInitialize" DowngradeErrorMessage="!(loc.Downgrade)" />
+    <MediaTemplate EmbedCab="yes" CompressionLevel="high" />
+    <Icon Id="WatcherIcon" SourceFile="packaging/assets/CodexCapacityWatcher.ico" />
+    <Property Id="ARPPRODUCTICON" Value="WatcherIcon" />
+    <SetProperty Id="ARPINSTALLLOCATION" Value="[INSTALLFOLDER]" After="CostFinalize" Sequence="execute" />
+    <Property Id="INSTALLFOLDER" Secure="yes" />
+    <Property Id="PREVIOUSINSTALLFOLDER" Secure="yes">
+      <RegistrySearch Id="FindPreviousMsiFolder" Root="HKLM" Bitness="always64" Type="raw"
+                      Key="Software\Codex Capacity Watcher\MSI" Name="InstallDir" />
+    </Property>
+    <!-- Keep the existing location during upgrades unless the caller chose a new one. -->
+    <SetProperty Id="INSTALLFOLDER" Value="[PREVIOUSINSTALLFOLDER]" After="AppSearch"
+                 Sequence="both" Condition="PREVIOUSINSTALLFOLDER AND NOT INSTALLFOLDER" />
+    <Property Id="NSIS64">
+      <RegistrySearch Id="FindNsis64" Root="HKLM" Bitness="always64" Type="raw"
+                      Key="Software\Microsoft\Windows\CurrentVersion\Uninstall\Codex Capacity Watcher" Name="UninstallString" />
+    </Property>
+    <Property Id="NSIS32">
+      <RegistrySearch Id="FindNsis32" Root="HKLM" Bitness="always32" Type="raw"
+                      Key="Software\Microsoft\Windows\CurrentVersion\Uninstall\Codex Capacity Watcher" Name="UninstallString" />
+    </Property>
+    <Launch Condition="Installed OR NOT (NSIS64 OR NSIS32)" Message="!(loc.NsisPresent)" />
+
+    <StandardDirectory Id="ProgramFiles64Folder">
+      <Directory Id="INSTALLFOLDER" Name="Codex Capacity Watcher">
+        <Component Id="WatcherApplication" Guid="*">
+          <File Id="WatcherExe" Source="dist/CodexCapacityWatcher.exe" KeyPath="yes">
+            <Shortcut Id="StartMenuShortcut" Directory="WatcherMenu" Name="Codex Capacity Watcher"
+                      WorkingDirectory="INSTALLFOLDER" Advertise="yes" Icon="WatcherIcon" />
+          </File>
+          <RegistryValue Root="HKLM" Key="Software\Codex Capacity Watcher\MSI"
+                         Name="InstallDir" Type="string" Value="[INSTALLFOLDER]" />
+          <RemoveFolder Id="RemoveWatcherMenu" Directory="WatcherMenu" On="uninstall" />
+        </Component>
+      </Directory>
+    </StandardDirectory>
+    <StandardDirectory Id="ProgramMenuFolder">
+      <Directory Id="WatcherMenu" Name="Codex Capacity Watcher" />
+    </StandardDirectory>
+    <Feature Id="Application" Title="Codex Capacity Watcher" Level="1">
+      <ComponentRef Id="WatcherApplication" />
+    </Feature>
+    <UIRef Id="WatcherUI" />
+    <UIRef Id="WixUI_ErrorProgressText" />
+    <WixVariable Id="WixUIBannerBmp" Value="build/installer-artwork/msi-banner.bmp" />
+    <WixVariable Id="WixUIDialogBmp" Value="build/installer-artwork/msi-dialog.bmp" />
+  </Package>
+</Wix>

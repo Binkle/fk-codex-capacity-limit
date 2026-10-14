@@ -1,0 +1,16 @@
+<WixLocalization xmlns="http://wixtoolset.org/schemas/v4/wxl" Culture="en-US" Codepage="1252">
+  <String Id="Language" Value="1033" />
+  <String Id="Codepage" Value="1252" />
+  <String Id="SetupTitle" Value="Codex Capacity Watcher Setup" />
+  <String Id="WelcomeSubtitle" Value="Install the app, then keep your Codex sessions moving." />
+  <String Id="WelcomeHint" Value="Choose Next to select a folder and install." />
+  <String Id="FolderLabel" Value="Install folder" />
+  <String Id="Downgrade" Value="A newer version is already installed. Uninstall it before installing this version." />
+  <String Id="NsisPresent" Value="The EXE edition is already installed. Uninstall it in Windows Settings before switching to the MSI installer." />
+  <String Id="InstallDirDlgTitle" Value="{\WixUI_Font_Title}Choose where to install" />
+  <String Id="InstallDirDlgDescription" Value="Use the suggested folder or choose a different location." />
+  <String Id="ExitDialogTitle" Value="{\WixUI_Font_Bigger}All done" />
+  <String Id="ExitDialogDescription" Value="Setup has finished. Choose Finish to close this window." />
+  <String Id="MaintenanceWelcomeDlgTitle" Value="{\WixUI_Font_Bigger}Manage your installation" />
+  <String Id="MaintenanceWelcomeDlgDescription" Value="Repair the application or remove it from this PC. Your personal settings and session data will be kept." />
+</WixLocalization>

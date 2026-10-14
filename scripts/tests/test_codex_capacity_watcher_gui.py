@@ -1,6 +1,7 @@
 import importlib.util
 import json
 import os
+import subprocess
 from types import SimpleNamespace
 from pathlib import Path
 
@@ -166,3 +167,20 @@ def test_worker_command_supports_source_and_frozen_modes():
 
     assert source[2:] == ["--worker", "--stop"]
     assert frozen[1:] == ["--worker", "--stop"]
+
+
+def test_source_worker_runs_cli_once(tmp_path):
+    state_file = tmp_path / "state.json"
+    command = gui._worker_command(
+        ["--once", "--all-sessions", "--codex-home", str(tmp_path / "codex"),
+         "--state-file", str(state_file)],
+        frozen=False,
+    )
+    result = subprocess.run(
+        command, capture_output=True, text=True,
+        encoding="utf-8", errors="replace", timeout=10,
+    )
+
+    assert result.returncode == 0, result.stderr
+    assert state_file.is_file()
+    assert json.loads(state_file.read_text(encoding="utf-8"))["queued"] == {}

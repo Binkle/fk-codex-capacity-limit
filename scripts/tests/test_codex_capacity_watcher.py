@@ -1,6 +1,8 @@
 import json
 import os
+import subprocess
 import sys
+import time
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -270,12 +272,19 @@ def test_active_terminal_directory_can_allow_vscode_metadata(tmp_path):
 
 def test_queue_message_targets_the_session_and_sends_continue(tmp_path):
     output = tmp_path / "args.txt"
-    fake_codex = tmp_path / "codex"
-    fake_codex.write_text(
-        "#!/bin/sh\nprintf '%s\\n' \"$@\" > \"$CODEX_WATCHER_ARGS\"\n",
-        encoding="utf-8",
-    )
-    fake_codex.chmod(0o755)
+    if os.name == "nt":
+        fake_codex = tmp_path / "codex.cmd"
+        fake_codex.write_text(
+            '@echo off\n(for %%A in (%*) do @echo %%~A) > "%CODEX_WATCHER_ARGS%"\n',
+            encoding="utf-8",
+        )
+    else:
+        fake_codex = tmp_path / "codex"
+        fake_codex.write_text(
+            "#!/bin/sh\nprintf '%s\\n' \"$@\" > \"$CODEX_WATCHER_ARGS\"\n",
+            encoding="utf-8",
+        )
+        fake_codex.chmod(0o755)
     event = CapacityEvent(
         session_id="00000000-0000-0000-0000-000000000006",
         turn_id="turn-6",
@@ -332,6 +341,7 @@ def test_pid_is_running_handles_windows_invalid_handle_error(monkeypatch):
     def invalid_handle(_pid, _signal):
         raise SystemError("<built-in function kill> returned a result with an exception set")
 
+    monkeypatch.setattr(process_module, "_WINDOWS", False)
     monkeypatch.setattr(process_module.os, "kill", invalid_handle)
 
     assert watcher_module._pid_is_running(12345) is False
@@ -341,6 +351,7 @@ def test_stop_pid_handles_windows_invalid_handle_error(monkeypatch):
     def invalid_handle(_pid, _signal):
         raise SystemError("<built-in function kill> returned a result with an exception set")
 
+    monkeypatch.setattr(process_module, "_WINDOWS", False)
     monkeypatch.setattr(process_module.os, "kill", invalid_handle)
 
     assert process_module.stop_pid(12345) is None
@@ -360,6 +371,9 @@ def test_windows_process_helpers_use_exit_code_and_terminate_process(monkeypatch
         def TerminateProcess(self, _handle, _code):
             return 1
 
+        def WaitForSingleObject(self, _handle, _timeout):
+            return 0
+
         def CloseHandle(self, _handle):
             return 1
 
@@ -371,6 +385,112 @@ def test_windows_process_helpers_use_exit_code_and_terminate_process(monkeypatch
     assert process_module.stop_pid(12345) is True
     kernel.exit_code = 0
     assert process_module.pid_is_running(12345) is False
+
+
+def test_windows_stop_does_not_report_success_before_exit(monkeypatch):
+    class FakeKernel:
+        closed = False
+        wait_result = 258
+
+        def OpenProcess(self, access, _inherit, _pid):
+            assert access & process_module._SYNCHRONIZE
+            return 1
+
+        def TerminateProcess(self, _handle, _code):
+            return 1
+
+        def WaitForSingleObject(self, _handle, timeout):
+            assert timeout > 0
+            return self.wait_result
+
+        def CloseHandle(self, _handle):
+            self.closed = True
+            return 1
+
+    monkeypatch.setattr(process_module, "_WINDOWS", True)
+    for wait_result in (258, 0xFFFFFFFF):
+        kernel = FakeKernel()
+        kernel.wait_result = wait_result
+        monkeypatch.setattr(process_module, "_kernel32", lambda: kernel)
+        assert process_module.stop_pid(12345) is None
+        assert kernel.closed
+
+
+def test_stop_watcher_cleans_pid_only_after_confirmed_exit(tmp_path, monkeypatch):
+    pid_file = tmp_path / "capacity-watcher.pid"
+    pid_file.write_text("12345\n", encoding="utf-8")
+    running = iter((True, False))
+    monkeypatch.setattr(watcher_module, "_pid_is_running", lambda _pid: next(running))
+    monkeypatch.setattr(watcher_module, "_send_stop_signal", lambda _pid: True)
+
+    assert stop_watcher(pid_file) == 0
+    assert not pid_file.exists()
+
+
+def test_stop_watcher_keeps_pid_while_process_is_stopping(tmp_path, monkeypatch):
+    pid_file = tmp_path / "capacity-watcher.pid"
+    pid_file.write_text("12345\n", encoding="utf-8")
+    monkeypatch.setattr(watcher_module, "_pid_is_running", lambda _pid: True)
+    monkeypatch.setattr(watcher_module, "_send_stop_signal", lambda _pid: True)
+
+    assert stop_watcher(pid_file) == 0
+    assert pid_file.read_text(encoding="utf-8").strip() == "12345"
+
+
+def test_stop_watcher_preserves_new_process_pid(tmp_path, monkeypatch):
+    pid_file = tmp_path / "capacity-watcher.pid"
+    pid_file.write_text("12345\n", encoding="utf-8")
+    running = iter((True, False))
+
+    def stop_and_restart(_pid):
+        pid_file.write_text("23456\n", encoding="utf-8")
+        return True
+
+    monkeypatch.setattr(watcher_module, "_pid_is_running", lambda _pid: next(running))
+    monkeypatch.setattr(watcher_module, "_send_stop_signal", stop_and_restart)
+
+    assert stop_watcher(pid_file) == 0
+    assert pid_file.read_text(encoding="utf-8").strip() == "23456"
+
+
+def test_cli_entrypoint_prints_help():
+    result = subprocess.run(
+        [sys.executable, str(Path(watcher_module.__file__)), "--help"],
+        capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=10,
+    )
+
+    assert result.returncode == 0, result.stderr
+    assert "--codex-home" in result.stdout
+
+
+def test_cli_process_start_stop_cleans_pid_file(tmp_path):
+    script = str(Path(watcher_module.__file__))
+    pid_file = tmp_path / "capacity-watcher.pid"
+    state_file = tmp_path / "state.json"
+    command = [sys.executable, script, "--codex-home", str(tmp_path / "codex"),
+               "--state-file", str(state_file), "--pid-file", str(pid_file)]
+    process = subprocess.Popen(
+        [*command, "--dry-run", "--all-sessions", "--interval", "0.1"],
+        stdout=subprocess.DEVNULL, stderr=subprocess.PIPE,
+    )
+    try:
+        deadline = time.monotonic() + 10
+        while not pid_file.exists() and process.poll() is None and time.monotonic() < deadline:
+            time.sleep(0.05)
+        assert process.poll() is None, process.communicate(timeout=5)[1]
+        assert pid_file.exists()
+        assert int(pid_file.read_text(encoding="utf-8")) == process.pid
+        result = subprocess.run(
+            [*command, "--stop"], capture_output=True, text=True,
+            encoding="utf-8", errors="replace", timeout=10,
+        )
+        assert result.returncode == 0, result.stderr
+        assert process.wait(timeout=10) == 0
+        assert not pid_file.exists()
+    finally:
+        if process.poll() is None:
+            process.terminate()
+        process.communicate(timeout=10)
 
 
 def test_stop_option_and_custom_pid_file_are_parsed(tmp_path):

@@ -142,6 +142,10 @@ def stop_watcher(pid_file: Path) -> int:
         else:
             result = _send_stop_signal(pid)
             if result is True:
+                # Windows terminates the process without running its finally
+                # block. Only remove its PID file once termination is confirmed.
+                if not _pid_is_running(pid):
+                    _release_pid_file(pid_file, pid)
                 return 0
             if result is None:
                 return 1
@@ -251,3 +255,7 @@ def main(argv: list[str] | None = None) -> int:
         return 0
     finally:
         _release_pid_file(pid_file, pid)
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
