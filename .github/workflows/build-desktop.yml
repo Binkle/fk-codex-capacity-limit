@@ -47,14 +47,11 @@ jobs:
           exit /b %BUILD_EXIT%
 
       - name: Upload Windows build diagnostics
-        if: always() && runner.os == 'Windows'
+        if: failure() && runner.os == 'Windows'
         uses: actions/upload-artifact@v4
         with:
           name: CodexCapacityWatcher-windows-diagnostics
-          path: |
-            dist/windows-build.log
-            dist/CodexCapacityWatcher.exe
-            dist/CodexCapacityWatcher-Setup.exe
+          path: dist/windows-build.log
           if-no-files-found: ignore
 
       - name: Report Windows build log
@@ -62,13 +59,9 @@ jobs:
         shell: pwsh
         run: |
           if (Test-Path dist/windows-build.log) {
-            $matches = Get-Content dist/windows-build.log | Where-Object {
-              $_ -match '(?i)(error|failed|failure|traceback|exception|unable|cannot|not found|missing)'
-            }
-            if ($matches.Count -eq 0) {
-              $matches = Get-Content dist/windows-build.log | Select-Object -Last 20
-            }
-            $matches | ForEach-Object { Write-Host "::error title=Windows packaging error::$_" }
+            $tail = (Get-Content dist/windows-build.log -Tail 30) -join "`n"
+            $tail = $tail.Replace('%', '%25').Replace("`r", '%0D').Replace("`n", '%0A')
+            Write-Host "::error title=Windows packaging error::$tail"
           }
 
       - name: Upload macOS application
@@ -76,6 +69,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.artifact }}
+          if-no-files-found: error
           path: |
             dist/CodexCapacityWatcher-macos.dmg
             dist/CodexCapacityWatcher-macos.zip
@@ -85,6 +79,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.artifact }}
+          if-no-files-found: error
           path: dist/CodexCapacityWatcher-Setup.exe
 
   release:
@@ -94,15 +89,24 @@ jobs:
     permissions:
       contents: write
     steps:
-      - name: Download desktop artifacts
+      - name: Download macOS artifacts
         uses: actions/download-artifact@v4
         with:
+          name: CodexCapacityWatcher-macos
+          path: release-assets
+
+      - name: Download Windows installer
+        uses: actions/download-artifact@v4
+        with:
+          name: CodexCapacityWatcher-windows
           path: release-assets
 
       - name: Create GitHub release
         env:
           GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
         run: |
-          gh release create "$GITHUB_REF_NAME" release-assets/*/* \
+          gh release create "$GITHUB_REF_NAME" release-assets/* \
             --title "Codex Capacity Watcher $GITHUB_REF_NAME" \
+            --verify-tag \
             --generate-notes
