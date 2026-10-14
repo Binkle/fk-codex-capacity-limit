@@ -16,7 +16,7 @@ from pathlib import Path
 from typing import Any, Iterable
 
 try:
-    from PySide6.QtCore import QProcess, Qt
+    from PySide6.QtCore import QProcess, QTimer, Qt
     from PySide6.QtGui import QCloseEvent
     from PySide6.QtWidgets import (
         QApplication,
@@ -38,6 +38,7 @@ try:
     )
 except ImportError as error:  # Keep the worker mode usable without GUI dependencies.
     QProcess = None  # type: ignore[assignment]
+    QTimer = None  # type: ignore[assignment]
     QT_IMPORT_ERROR: ImportError | None = error
 else:
     QT_IMPORT_ERROR = None
@@ -416,6 +417,9 @@ if QT_IMPORT_ERROR is None:
             self.stop_process: QProcess | None = None
             self.running_settings: dict[str, Any] | None = None
             self.close_requested = False
+            self.external_poll = QTimer(self)
+            self.external_poll.setInterval(1000)
+            self.external_poll.timeout.connect(self._poll_external_watcher)
 
             self.codex_home = QLineEdit(str(self.settings["codex_home"]))
             self.state_file = QLineEdit(str(self.settings["state_file"]))
@@ -450,6 +454,8 @@ if QT_IMPORT_ERROR is None:
 
             self._build_ui()
             self._append_log("准备就绪。点击“开始监控”即可运行。")
+            self._poll_external_watcher()
+            self.external_poll.start()
 
         @staticmethod
         def _double_box(value: float, minimum: float, maximum: float) -> QDoubleSpinBox:
@@ -880,6 +886,44 @@ if QT_IMPORT_ERROR is None:
             self._append_log(f"设置已保存：{SETTINGS_FILE}")
             return True
 
+        @staticmethod
+        def _watcher_pid(settings: dict[str, Any]) -> int | None:
+            pid_file = _path(str(settings["state_file"])).with_name("capacity-watcher.pid")
+            try:
+                pid = int(pid_file.read_text(encoding="utf-8").strip())
+            except (OSError, ValueError):
+                return None
+            if pid <= 0:
+                return None
+            try:
+                os.kill(pid, 0)
+            except ProcessLookupError:
+                return None
+            except PermissionError:
+                return pid
+            except OSError:
+                return None
+            return pid
+
+        def _poll_external_watcher(self) -> None:
+            if self.process and self.process.state() != QProcess.ProcessState.NotRunning:
+                return
+            settings = self.running_settings or self.settings
+            pid = self._watcher_pid(settings)
+            if pid is not None:
+                self.running_settings = settings
+                self.start_button.setEnabled(False)
+                self.stop_button.setEnabled(True)
+                if self.status.property("state") != "running":
+                    self._append_log(f"检测到监控已在运行（PID {pid}）。")
+                    self._set_status("运行中", "running")
+                return
+            if self.stop_process is None and self.status.property("state") == "running":
+                self.running_settings = None
+                self.start_button.setEnabled(True)
+                self.stop_button.setEnabled(False)
+                self._set_status("已停止", "idle")
+
         def _start(self) -> None:
             if self.process and self.process.state() != QProcess.ProcessState.NotRunning:
                 return
@@ -890,6 +934,14 @@ if QT_IMPORT_ERROR is None:
                 QMessageBox.critical(self, "无法启动", str(error))
                 return
             self.settings = settings
+            existing_pid = self._watcher_pid(settings)
+            if existing_pid is not None:
+                self.running_settings = settings
+                self.start_button.setEnabled(False)
+                self.stop_button.setEnabled(True)
+                self._append_log(f"监控已经在运行（PID {existing_pid}），无需重复启动。")
+                self._set_status("运行中", "running")
+                return
             self.running_settings = settings
             command = _worker_command(watcher_arguments(settings))
             self._append_log("启动：" + " ".join(self._display_argument(item) for item in command))
@@ -976,6 +1028,11 @@ if QT_IMPORT_ERROR is None:
             if exit_code != 0:
                 self._append_log(f"停止命令退出代码：{exit_code}")
             self.stop_process = None
+            if self.process is None and exit_code == 0:
+                self.running_settings = None
+                self.start_button.setEnabled(True)
+                self.stop_button.setEnabled(False)
+                self._set_status("已停止", "idle")
             self._maybe_close()
 
         def _watcher_error(self, _error: QProcess.ProcessError) -> None:
