@@ -5,10 +5,9 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any
 
-from PySide6.QtCore import QProcess, QProcessEnvironment, QTimer, Qt
+from PySide6.QtCore import QProcess, QProcessEnvironment, QTimer
 from PySide6.QtGui import QCloseEvent, QIcon
 from PySide6.QtWidgets import (
-    QApplication,
     QCheckBox,
     QDoubleSpinBox,
     QFileDialog,
@@ -41,6 +40,7 @@ from codex_capacity_watcher_i18n import normalize_language, translate
 from codex_capacity_watcher_gui_pages import build_shell
 from codex_capacity_watcher_gui_theme import APP_STYLESHEET
 from codex_capacity_watcher_gui_tray import TrayController
+from codex_capacity_watcher_gui_lifecycle import ApplicationLifecycle
 from codex_capacity_watcher_process import pid_is_running
 
 
@@ -59,9 +59,8 @@ class CapacityWatcherWindow(QMainWindow):
         self.process: QProcess | None = None
         self.stop_process: QProcess | None = None
         self.running_settings: dict[str, Any] | None = None
-        self.close_requested = False
-        self.allow_close = False
         self.tray: TrayController | None = None
+        self.lifecycle: ApplicationLifecycle | None = None
         self.current_page = 0
         self.status_error_code: int | None = None
         self.external_poll = QTimer(self)
@@ -70,6 +69,7 @@ class CapacityWatcherWindow(QMainWindow):
         self._create_controls()
         build_shell(self)
         self.tray = TrayController(self)
+        self.lifecycle = ApplicationLifecycle(self)
         self._append_log(self.t("log.ready"))
         self._poll_external_watcher()
         self.external_poll.start()
@@ -168,8 +168,10 @@ class CapacityWatcherWindow(QMainWindow):
         if self.tray is not None:
             self.tray.update(
                 str(self.status.property("state")),
-                stop_busy=self.stop_process is not None,
+                stop_busy=self.stop_process is not None or bool(self.lifecycle and self.lifecycle.quitting),
             )
+        if self.lifecycle is not None:
+            self.lifecycle.update_text()
 
     def _settings_from_form(self) -> dict[str, Any]:
         codex_home = self.codex_home.text().strip()
@@ -204,12 +206,15 @@ class CapacityWatcherWindow(QMainWindow):
             "close_to_tray": self.close_to_tray.isChecked(),
         }
 
-    def _save(self) -> bool:
+    def _save(self, *, quiet: bool = False) -> bool:
         try:
             settings = self._settings_from_form()
             save_settings(settings)
         except (OSError, ValueError) as error:
-            QMessageBox.critical(self, self.t("dialog.invalid"), str(error))
+            if quiet:
+                self._append_log(self.t("dialog.invalid") + ": " + str(error))
+            else:
+                QMessageBox.critical(self, self.t("dialog.invalid"), str(error))
             return False
         self.settings = settings
         self._append_log(self.t("log.saved", path=str(SETTINGS_FILE)))
@@ -245,6 +250,8 @@ class CapacityWatcherWindow(QMainWindow):
             self._set_status(None, "idle")
 
     def _toggle_watcher(self) -> None:
+        if self.lifecycle and self.lifecycle.quitting:
+            return
         if self.stop_process and self.stop_process.state() != QProcess.ProcessState.NotRunning:
             return
         if self.process and self.process.state() != QProcess.ProcessState.NotRunning:
@@ -257,16 +264,7 @@ class CapacityWatcherWindow(QMainWindow):
         self._start()
 
     def _request_quit(self) -> None:
-        self.close_requested = True
-        if self.process and self.process.state() != QProcess.ProcessState.NotRunning:
-            self._stop()
-            return
-        if self.stop_process and self.stop_process.state() != QProcess.ProcessState.NotRunning:
-            return
-        if self._watcher_pid(self.running_settings or self.settings) is not None:
-            self._stop()
-            return
-        self._maybe_close()
+        self.lifecycle.request_quit()
 
     def _start(self) -> None:
         if self.process and self.process.state() != QProcess.ProcessState.NotRunning:
@@ -312,7 +310,7 @@ class CapacityWatcherWindow(QMainWindow):
         if self.stop_process and self.stop_process.state() != QProcess.ProcessState.NotRunning:
             return
         settings = self.running_settings or self.settings
-        if self.process is None:
+        if self.process is None and self.running_settings is None:
             try:
                 settings = self._settings_from_form()
             except ValueError:
@@ -337,6 +335,7 @@ class CapacityWatcherWindow(QMainWindow):
             self.toggle_button.setEnabled(True)
         else:
             self.toggle_button.setEnabled(False)
+        self._update_tray()
 
     @staticmethod
     def _read_output(process: QProcess) -> None:
@@ -382,7 +381,7 @@ class CapacityWatcherWindow(QMainWindow):
         self.toggle_button.setEnabled(True)
         self.process = None
         self.running_settings = None
-        self._maybe_close()
+        self._update_tray()
 
     def _stop_finished(self, exit_code: int, _status: QProcess.ExitStatus) -> None:
         if self.stop_process is not None:
@@ -394,7 +393,7 @@ class CapacityWatcherWindow(QMainWindow):
             self.running_settings = None
             self.toggle_button.setEnabled(True)
             self._set_status(None, "idle")
-        self._maybe_close()
+        self._update_tray()
 
     def _watcher_error(self, _error: QProcess.ProcessError) -> None:
         if self.process is not None:
@@ -439,23 +438,14 @@ class CapacityWatcherWindow(QMainWindow):
         if selected:
             line_edit.setText(selected)
 
-    def _maybe_close(self) -> None:
-        if self.close_requested and self.process is None and self.stop_process is None:
-            self.close_requested = False
-            self._save()
-            self.allow_close = True
-            self.close()
-
     def closeEvent(self, event: QCloseEvent) -> None:
-        if not self.allow_close and self.close_to_tray.isChecked():
-            self._save()
-            self.hide()
-            event.ignore()
+        if self.lifecycle.exiting:
+            event.accept()
             return
-        if not self.allow_close:
-            self._request_quit()
-            event.ignore()
+        if self.close_to_tray.isChecked() and self.tray.is_available():
+            self._save(quiet=True)
+            # Accept the native close event. The application and tray stay alive.
+            event.accept()
             return
-        self.allow_close = False
-        self._save()
-        event.accept()
+        event.ignore()
+        QTimer.singleShot(0, self._request_quit)

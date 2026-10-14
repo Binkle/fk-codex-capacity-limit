@@ -51,8 +51,6 @@ class TrayController:
         self.menu.addAction(self.quit_action)
         self.icon.setContextMenu(self.menu)
         self.icon.activated.connect(self._activated)
-        # macOS can report a false availability value while its status item works.
-        self.icon.setVisible(True)
         self.icon.show()
         self.update("idle", stop_busy=False)
 
@@ -64,6 +62,9 @@ class TrayController:
         )
         self.toggle_action.setEnabled(not stop_busy)
         self.quit_action.setText(self.host.t("tray.quit"))
+
+    def is_available(self) -> bool:
+        return QSystemTrayIcon.isSystemTrayAvailable() and self.icon.isVisible() and not self.icon.icon().isNull()
 
     def restore_window(self) -> None:
         self.host.showNormal()

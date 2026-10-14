@@ -26,7 +26,12 @@ jobs:
           python-version: "3.11"
 
       - name: Install GUI build dependencies
-        run: python -m pip install --upgrade pyinstaller PySide6
+        run: python -m pip install --upgrade pyinstaller PySide6 pytest
+
+      - name: Verify window and tray lifecycle
+        env:
+          QT_QPA_PLATFORM: offscreen
+        run: python -m pytest -q scripts/tests/test_codex_capacity_watcher_window.py
 
       - name: Build macOS application
         if: runner.os == 'macOS'

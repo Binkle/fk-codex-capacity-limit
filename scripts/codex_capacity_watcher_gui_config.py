@@ -19,7 +19,7 @@ APP_TITLE = "Codex Capacity Watcher"
 APP_ICON_NAME = "codex-capacity-watcher-icon.png"
 SETTINGS_FILE = Path.home() / ".codex" / "capacity-watcher-gui.json"
 LANGUAGE_FILE = Path.home() / ".codex" / "capacity-watcher-language.json"
-SCRIPT_PATH = Path(__file__).with_name("codex_capacity_watcher.py")
+SCRIPT_PATH = Path(__file__).with_name("codex_capacity_watcher_gui.py")
 SESSION_TYPE_KEYS = ("cli", "vscode", "desktop", "exec")
 
 
