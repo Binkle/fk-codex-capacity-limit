@@ -91,7 +91,8 @@ python3 scripts/codex_capacity_watcher.py --help
 切换按钮，支持设置扫描间隔，选择 Codex 主目录、状态文件和 Codex 程序，
 修改发送内容，并分别勾选终端 CLI、VS Code、ChatGPT/Codex 桌面端和
 `codex exec`。新安装默认勾选全部四类会话，也可以选择是否恢复历史、是否
-包含子代理，并查看实时日志。
+包含子代理，并查看实时日志。界面支持中文和 English，默认跟随系统语言，
+也可以在“运行设置”中切换；“回看时间”用于处理监控停止期间最近的限流会话。
 
 macOS 可以双击 `run-codex-capacity-watcher.command`，Windows 可以双击
 `run-codex-capacity-watcher.bat`。直接运行源码时需要 Python 3.10 及以上，

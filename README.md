@@ -91,8 +91,10 @@ The repository also includes a desktop interface for users who do not want to
 use a terminal. It provides a single Start/Stop button, a scan-interval field,
 Codex/state-file selectors, the follow-up message, recovery, independent
 checkboxes for terminal CLI, VS Code, ChatGPT/Codex desktop, and `codex exec`,
-recovery duration, preview mode, and a live log window. All four session types
-are selected in a new installation.
+the startup look-back window, preview mode, and a live log window. The
+interface supports English and Chinese, follows the system language by
+default, and lets you switch language in Settings. All four session types are
+selected in a new installation.
 
 On macOS, double-click `run-codex-capacity-watcher.command`. On Windows,
 double-click `run-codex-capacity-watcher.bat`. The source launcher requires
