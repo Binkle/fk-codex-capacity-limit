@@ -108,6 +108,10 @@ creates `dist\CodexCapacityWatcher.exe`. PyInstaller packages the watcher and
 GUI together, so the person using the finished application does not need to
 run the Python script manually.
 
+The repository also includes a GitHub Actions workflow at
+`.github/workflows/build-desktop.yml`. Run it manually from the Actions tab, or
+push a `v*` tag, to produce downloadable macOS and Windows artifacts.
+
 ## How it works
 
 The watcher stores the read offset for each rollout file and records queued events in its state file. When it detects a new capacity error, it extracts the session ID and turn ID, then calls `codex queue` to send the follow-up to the original session. Failed sends are not marked as processed, so a later scan can retry them.

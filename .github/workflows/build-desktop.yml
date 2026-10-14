@@ -1,0 +1,57 @@
+name: Build desktop applications
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - "v*"
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        include:
+          - os: macos-latest
+            artifact: CodexCapacityWatcher-macos
+          - os: windows-latest
+            artifact: CodexCapacityWatcher-windows
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install PyInstaller
+        run: python -m pip install --upgrade pyinstaller
+
+      - name: Build macOS application
+        if: runner.os == 'macOS'
+        run: >-
+          python -m PyInstaller --noconfirm --clean --windowed
+          --name CodexCapacityWatcher --hidden-import codex_capacity_watcher
+          scripts/codex_capacity_watcher_gui.py
+
+      - name: Build Windows application
+        if: runner.os == 'Windows'
+        run: >-
+          python -m PyInstaller --noconfirm --clean --onefile --windowed
+          --name CodexCapacityWatcher --hidden-import codex_capacity_watcher
+          scripts/codex_capacity_watcher_gui.py
+
+      - name: Upload macOS application
+        if: runner.os == 'macOS'
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact }}
+          path: dist/CodexCapacityWatcher.app
+
+      - name: Upload Windows application
+        if: runner.os == 'Windows'
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact }}
+          path: dist/CodexCapacityWatcher.exe
