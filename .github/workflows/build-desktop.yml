@@ -62,7 +62,13 @@ jobs:
         shell: pwsh
         run: |
           if (Test-Path dist/windows-build.log) {
-            Get-Content dist/windows-build.log | ForEach-Object { Write-Host "::error title=Windows packaging log::$_" }
+            $matches = Get-Content dist/windows-build.log | Where-Object {
+              $_ -match '(?i)(error|failed|failure|traceback|exception|unable|cannot|not found|missing)'
+            }
+            if ($matches.Count -eq 0) {
+              $matches = Get-Content dist/windows-build.log | Select-Object -Last 20
+            }
+            $matches | ForEach-Object { Write-Host "::error title=Windows packaging error::$_" }
           }
 
       - name: Upload macOS application
