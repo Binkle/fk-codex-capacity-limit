@@ -6,7 +6,7 @@ from pathlib import Path
 from typing import Any
 
 from PySide6.QtCore import QProcess, QProcessEnvironment, QTimer, Qt
-from PySide6.QtGui import QCloseEvent, QIcon
+from PySide6.QtGui import QAction, QCloseEvent, QIcon
 from PySide6.QtWidgets import (
     QApplication,
     QCheckBox,
@@ -18,6 +18,8 @@ from PySide6.QtWidgets import (
     QMessageBox,
     QPlainTextEdit,
     QPushButton,
+    QMenu,
+    QSystemTrayIcon,
 )
 
 from codex_capacity_watcher_gui_config import (
@@ -59,6 +61,7 @@ class CapacityWatcherWindow(QMainWindow):
         self.stop_process: QProcess | None = None
         self.running_settings: dict[str, Any] | None = None
         self.close_requested = False
+        self.allow_close = False
         self.current_page = 0
         self.status_error_code: int | None = None
         self.external_poll = QTimer(self)
@@ -66,6 +69,7 @@ class CapacityWatcherWindow(QMainWindow):
         self.external_poll.timeout.connect(self._poll_external_watcher)
         self._create_controls()
         build_shell(self)
+        self._create_tray()
         self._append_log(self.t("log.ready"))
         self._poll_external_watcher()
         self.external_poll.start()
@@ -157,6 +161,52 @@ class CapacityWatcherWindow(QMainWindow):
         self.log.setPlainText(log_text)
         self._show_page(page_index)
         self._set_status(None, str(state))
+        self._update_tray_text()
+
+    def _create_tray(self) -> None:
+        self.tray_icon = QSystemTrayIcon(self)
+        self.tray_icon.setIcon(self.windowIcon())
+        self.tray_icon.setToolTip(self.t("tray.tooltip"))
+        self.tray_menu = QMenu(self)
+        self.tray_show_action = QAction(self.t("tray.show"), self)
+        self.tray_show_action.triggered.connect(self._restore_window)
+        self.tray_menu.addAction(self.tray_show_action)
+        self.tray_menu.addSeparator()
+        self.tray_quit_action = QAction(self.t("tray.quit"), self)
+        self.tray_quit_action.triggered.connect(self._quit_from_tray)
+        self.tray_menu.addAction(self.tray_quit_action)
+        self.tray_icon.setContextMenu(self.tray_menu)
+        self.tray_icon.activated.connect(self._tray_activated)
+        if QSystemTrayIcon.isSystemTrayAvailable():
+            self.tray_icon.show()
+
+    def _update_tray_text(self) -> None:
+        if not hasattr(self, "tray_icon"):
+            return
+        self.tray_icon.setToolTip(self.t("tray.tooltip"))
+        self.tray_show_action.setText(self.t("tray.show"))
+        self.tray_quit_action.setText(self.t("tray.quit"))
+
+    def _restore_window(self) -> None:
+        self.showNormal()
+        self.raise_()
+        self.activateWindow()
+
+    def _tray_activated(self, reason: QSystemTrayIcon.ActivationReason) -> None:
+        if reason == QSystemTrayIcon.ActivationReason.DoubleClick:
+            self._restore_window()
+
+    def _quit_from_tray(self) -> None:
+        self.close_requested = True
+        if self.process and self.process.state() != QProcess.ProcessState.NotRunning:
+            self._stop()
+            return
+        if self.stop_process and self.stop_process.state() != QProcess.ProcessState.NotRunning:
+            return
+        if self._watcher_pid(self.running_settings or self.settings) is not None:
+            self._stop()
+            return
+        self._maybe_close()
 
     def _settings_from_form(self) -> dict[str, Any]:
         codex_home = self.codex_home.text().strip()
@@ -416,26 +466,15 @@ class CapacityWatcherWindow(QMainWindow):
         if self.close_requested and self.process is None and self.stop_process is None:
             self.close_requested = False
             self._save()
+            self.allow_close = True
             self.close()
 
     def closeEvent(self, event: QCloseEvent) -> None:
-        if self.process and self.process.state() != QProcess.ProcessState.NotRunning:
-            answer = QMessageBox.question(
-                self,
-                self.t("dialog.exit"),
-                self.t("dialog.running_question"),
-                QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
-            )
-            if answer != QMessageBox.StandardButton.Yes:
-                event.ignore()
-                return
-            self.close_requested = True
-            self._stop()
+        if not self.allow_close:
+            self._save()
+            self.showMinimized()
             event.ignore()
             return
-        if self.stop_process and self.stop_process.state() != QProcess.ProcessState.NotRunning:
-            self.close_requested = True
-            event.ignore()
-            return
+        self.allow_close = False
         self._save()
         event.accept()
