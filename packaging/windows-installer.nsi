@@ -15,11 +15,11 @@ Icon "assets${SOURCE_SEPARATOR}CodexCapacityWatcher.ico"
 UninstallIcon "assets${SOURCE_SEPARATOR}CodexCapacityWatcher.ico"
 ShowInstDetails show
 ShowUninstDetails show
-VIProductVersion "0.1.0.0"
+VIProductVersion "0.1.1.0"
 VIAddVersionKey "ProductName" "Codex Capacity Watcher"
 VIAddVersionKey "CompanyName" "Binkle"
 VIAddVersionKey "FileDescription" "Codex capacity watcher"
-VIAddVersionKey "FileVersion" "0.1.0"
+VIAddVersionKey "FileVersion" "0.1.1"
 VIAddVersionKey "LegalCopyright" "Copyright (c) Binkle"
 
 Section "Codex Capacity Watcher" SecApplication
@@ -35,7 +35,7 @@ Section "Codex Capacity Watcher" SecApplication
   WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Codex Capacity Watcher" "DisplayName" "Codex Capacity Watcher"
   WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Codex Capacity Watcher" "UninstallString" '"$INSTDIR\Uninstall.exe"'
   WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Codex Capacity Watcher" "DisplayIcon" "$INSTDIR\CodexCapacityWatcher.exe"
-  WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Codex Capacity Watcher" "DisplayVersion" "0.1.0"
+  WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Codex Capacity Watcher" "DisplayVersion" "0.1.1"
 SectionEnd
 
 Section "Uninstall"

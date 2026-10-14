@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import os
 from pathlib import Path
 from typing import Any
 
@@ -41,6 +40,7 @@ from codex_capacity_watcher_gui_config import (
 from codex_capacity_watcher_i18n import normalize_language, translate
 from codex_capacity_watcher_gui_pages import build_shell
 from codex_capacity_watcher_gui_theme import APP_STYLESHEET
+from codex_capacity_watcher_process import pid_is_running
 
 
 class CapacityWatcherWindow(QMainWindow):
@@ -209,13 +209,7 @@ class CapacityWatcherWindow(QMainWindow):
             return None
         if pid <= 0:
             return None
-        try:
-            os.kill(pid, 0)
-        except ProcessLookupError:
-            return None
-        except PermissionError:
-            return pid
-        except OSError:
+        if not pid_is_running(pid):
             return None
         return pid
 

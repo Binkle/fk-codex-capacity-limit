@@ -7,6 +7,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parents[1]))
 
 import codex_capacity_watcher as watcher_module  # noqa: E402
+import codex_capacity_watcher_process as process_module  # noqa: E402
 from codex_capacity_watcher import (  # noqa: E402
     CapacityEvent,
     CapacityWatcher,
@@ -325,6 +326,51 @@ def test_stop_watcher_removes_stale_pid_file(tmp_path, monkeypatch):
 
     assert stop_watcher(pid_file) == 0
     assert not pid_file.exists()
+
+
+def test_pid_is_running_handles_windows_invalid_handle_error(monkeypatch):
+    def invalid_handle(_pid, _signal):
+        raise SystemError("<built-in function kill> returned a result with an exception set")
+
+    monkeypatch.setattr(process_module.os, "kill", invalid_handle)
+
+    assert watcher_module._pid_is_running(12345) is False
+
+
+def test_stop_pid_handles_windows_invalid_handle_error(monkeypatch):
+    def invalid_handle(_pid, _signal):
+        raise SystemError("<built-in function kill> returned a result with an exception set")
+
+    monkeypatch.setattr(process_module.os, "kill", invalid_handle)
+
+    assert process_module.stop_pid(12345) is None
+
+
+def test_windows_process_helpers_use_exit_code_and_terminate_process(monkeypatch):
+    class FakeKernel:
+        exit_code = process_module._STILL_ACTIVE
+
+        def OpenProcess(self, _access, _inherit, _pid):
+            return 1
+
+        def GetExitCodeProcess(self, _handle, code):
+            code._obj.value = self.exit_code
+            return 1
+
+        def TerminateProcess(self, _handle, _code):
+            return 1
+
+        def CloseHandle(self, _handle):
+            return 1
+
+    kernel = FakeKernel()
+    monkeypatch.setattr(process_module, "_WINDOWS", True)
+    monkeypatch.setattr(process_module, "_kernel32", lambda: kernel)
+
+    assert process_module.pid_is_running(12345) is True
+    assert process_module.stop_pid(12345) is True
+    kernel.exit_code = 0
+    assert process_module.pid_is_running(12345) is False
 
 
 def test_stop_option_and_custom_pid_file_are_parsed(tmp_path):

@@ -41,6 +41,7 @@ from codex_capacity_watcher_core import (
     session_type,
 )
 from codex_capacity_watcher_engine import CapacityWatcher, queue_message
+from codex_capacity_watcher_process import pid_is_running, stop_pid
 
 def _default_pid_file(state_file: Path) -> Path:
     return state_file.with_name("capacity-watcher.pid")
@@ -53,15 +54,7 @@ def _read_pid(path: Path) -> int | None:
     return value if value > 0 else None
 
 def _pid_is_running(pid: int) -> bool:
-    try:
-        os.kill(pid, 0)
-    except ProcessLookupError:
-        return False
-    except PermissionError:
-        return True
-    except OSError:
-        return False
-    return True
+    return pid_is_running(pid)
 
 def _acquire_pid_file(path: Path) -> int:
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -126,13 +119,12 @@ def _discover_watcher_pids() -> tuple[int, ...]:
     return tuple(sorted(pids))
 
 def _send_stop_signal(pid: int) -> bool | None:
-    try:
-        os.kill(pid, signal.SIGTERM)
-    except ProcessLookupError:
-        return False
-    except PermissionError as error:
-        print(f"[watcher] cannot stop PID {pid}: {error}", file=sys.stderr, flush=True)
+    result = stop_pid(pid)
+    if result is None:
+        print(f"[watcher] cannot stop PID {pid}", file=sys.stderr, flush=True)
         return None
+    if result is False:
+        return False
     print(f"[watcher] stop requested for PID {pid}", flush=True)
     return True
 
