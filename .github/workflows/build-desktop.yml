@@ -39,7 +39,31 @@ jobs:
 
       - name: Install NSIS
         if: runner.os == 'Windows'
-        run: choco install nsis --no-progress -y
+        shell: pwsh
+        run: |
+          function Find-NsisCompiler {
+            $command = Get-Command makensis.exe -ErrorAction SilentlyContinue
+            $candidates = @(
+              "${env:ProgramFiles(x86)}\NSIS\makensis.exe",
+              "$env:ProgramFiles\NSIS\makensis.exe"
+            )
+            if ($command) { $candidates += $command.Source }
+            foreach ($candidate in $candidates) {
+              if (Test-Path -LiteralPath $candidate -PathType Leaf) { return $candidate }
+            }
+          }
+          $compiler = Find-NsisCompiler
+          if (-not $compiler) {
+            # Repair runner images where Chocolatey records NSIS but the binary is absent.
+            choco install nsis --force --no-progress -y
+            if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+            $compiler = Find-NsisCompiler
+          }
+          if (-not $compiler) { throw "NSIS installation did not provide makensis.exe" }
+          "MAKENSIS=$compiler" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          Write-Host "Using NSIS compiler: $compiler"
+          & $compiler /VERSION
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
       - name: Build Windows installer
         if: runner.os == 'Windows'

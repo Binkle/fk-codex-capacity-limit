@@ -37,6 +37,7 @@ if not exist "dist\CodexCapacityWatcher.exe" (
 )
 echo [build] PyInstaller output is present
 
+if defined MAKENSIS if exist "%MAKENSIS%" goto nsis_found
 set "MAKENSIS=%ProgramFiles(x86)%\NSIS\makensis.exe"
 if not exist "%MAKENSIS%" set "MAKENSIS=%ProgramFiles%\NSIS\makensis.exe"
 if not exist "%MAKENSIS%" for /f "delims=" %%I in ('where makensis.exe 2^>nul') do set "MAKENSIS=%%I"
@@ -44,6 +45,7 @@ if not exist "%MAKENSIS%" (
   echo NSIS is required to build the Windows installer. Install it from https://nsis.sourceforge.io/Download
   exit /b 1
 )
+:nsis_found
 echo Using NSIS: %MAKENSIS%
 echo [build] Running NSIS installer compiler
 "%MAKENSIS%" packaging\windows-installer.nsi
