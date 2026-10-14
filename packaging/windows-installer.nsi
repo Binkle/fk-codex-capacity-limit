@@ -1,15 +1,11 @@
-!ifndef PROJECT_ROOT
-!define PROJECT_ROOT ".."
-!endif
-
 Unicode True
 Name "Codex Capacity Watcher"
-OutFile "${PROJECT_ROOT}/dist/CodexCapacityWatcher-Setup.exe"
+OutFile "../dist/CodexCapacityWatcher-Setup.exe"
 InstallDir "$PROGRAMFILES64\Codex Capacity Watcher"
 InstallDirRegKey HKLM "Software\Codex Capacity Watcher" "InstallDir"
 RequestExecutionLevel admin
-Icon "${PROJECT_ROOT}/packaging/assets/CodexCapacityWatcher.ico"
-UninstallIcon "${PROJECT_ROOT}/packaging/assets/CodexCapacityWatcher.ico"
+Icon "assets/CodexCapacityWatcher.ico"
+UninstallIcon "assets/CodexCapacityWatcher.ico"
 ShowInstDetails show
 ShowUninstDetails show
 VIProductVersion "0.1.0.0"
@@ -21,7 +17,7 @@ VIAddVersionKey "LegalCopyright" "Copyright (c) Binkle"
 
 Section "Codex Capacity Watcher" SecApplication
   SetOutPath "$INSTDIR"
-  File "${PROJECT_ROOT}/dist/CodexCapacityWatcher.exe"
+  File "../dist/CodexCapacityWatcher.exe"
   WriteUninstaller "$INSTDIR/Uninstall.exe"
 
   CreateDirectory "$SMPROGRAMS\Codex Capacity Watcher"
