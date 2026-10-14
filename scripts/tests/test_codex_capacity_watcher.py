@@ -199,11 +199,29 @@ def test_subagent_is_ignored_by_default(tmp_path):
 def test_vscode_session_is_ignored_by_default(tmp_path):
     home = tmp_path / "codex"
     session = "00000000-0000-0000-0000-000000000009"
-    _rollout(home, session, [_meta(session, source="vscode"), _complete(session, "turn-9")])
+    _rollout(
+        home,
+        session,
+        [_meta(session, source="vscode", originator="Codex Desktop"), _complete(session, "turn-9")],
+    )
     sent = []
     watcher = _watcher(home, tmp_path / "state.json", sent, recover=True)
     assert watcher.scan() == 0
     assert sent == []
+
+
+def test_cli_tui_with_vscode_source_is_allowed_by_default(tmp_path):
+    home = tmp_path / "codex"
+    session = "00000000-0000-0000-0000-000000000013"
+    _rollout(
+        home,
+        session,
+        [_meta(session, source="vscode", originator="codex-tui"), _complete(session, "turn-13")],
+    )
+    sent = []
+    watcher = _watcher(home, tmp_path / "state.json", sent, recover=True)
+    assert watcher.scan() == 1
+    assert sent[0].session_id == session
 
 
 def test_all_sessions_can_include_vscode_session(tmp_path):

@@ -192,10 +192,18 @@ def discover_rollouts(codex_home: Path) -> Iterable[Path]:
 
 
 def _terminal_session(source: str | None, originator: str | None) -> bool:
-    """Keep interactive CLI sessions while excluding editor and exec origins."""
-    if source is not None and source != "cli":
+    """Keep interactive CLI sessions while excluding editor and exec origins.
+
+    Recent Codex CLI releases create TUI threads through the shared app-server,
+    which persists ``source="vscode"`` even though the client is still the
+    terminal TUI.  ``originator="codex-tui"`` is the reliable client marker in
+    that case, so it takes precedence over the persisted source value.
+    """
+    if originator in {"codex-tui", "codex_cli_rs"}:
+        return True
+    if originator is not None:
         return False
-    return originator in {None, "codex-tui", "codex_cli_rs"}
+    return source in {None, "cli"}
 
 
 def _file_signature(path: Path) -> tuple[int, int] | None:
