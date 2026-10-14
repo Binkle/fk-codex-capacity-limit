@@ -47,6 +47,13 @@ else:
 APP_TITLE = "Codex Capacity Watcher"
 SETTINGS_FILE = Path.home() / ".codex" / "capacity-watcher-gui.json"
 SCRIPT_PATH = Path(__file__).with_name("codex_capacity_watcher.py")
+SESSION_TYPE_KEYS = ("cli", "vscode", "desktop", "exec")
+SESSION_TYPE_LABELS = {
+    "cli": "终端 CLI",
+    "vscode": "VS Code",
+    "desktop": "ChatGPT 桌面端",
+    "exec": "codex exec",
+}
 
 
 APP_STYLESHEET = """
@@ -341,21 +348,42 @@ def default_settings() -> dict[str, Any]:
         "recover_hours": "6",
         "recover": False,
         "all_sessions": True,
+        "session_types": list(SESSION_TYPE_KEYS),
         "include_subagents": False,
         "dry_run": False,
     }
 
 
-def load_settings(path: Path = SETTINGS_FILE) -> dict[str, Any]:
+def _normalise_session_types(value: Any) -> list[str]:
+    if isinstance(value, str):
+        values = value.split(",")
+    elif isinstance(value, (list, tuple, set)):
+        values = list(value)
+    else:
+        values = []
+    selected: list[str] = []
+    for item in values:
+        key = str(item).strip().lower()
+        if key in SESSION_TYPE_KEYS and key not in selected:
+            selected.append(key)
+    return [key for key in SESSION_TYPE_KEYS if key in selected]
+
+
+def load_settings(path: Path | None = None) -> dict[str, Any]:
     settings = default_settings()
+    settings_path = path or SETTINGS_FILE
     try:
-        value = json.loads(path.read_text(encoding="utf-8"))
+        value = json.loads(settings_path.read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError):
         return settings
     if isinstance(value, dict):
         for key in settings:
             if key in value:
                 settings[key] = value[key]
+        if "session_types" not in value:
+            settings["session_types"] = list(SESSION_TYPE_KEYS) if bool(settings["all_sessions"]) else ["cli"]
+        settings["session_types"] = _normalise_session_types(settings["session_types"])
+        settings["all_sessions"] = set(settings["session_types"]) == set(SESSION_TYPE_KEYS)
     return settings
 
 
@@ -415,7 +443,10 @@ def watcher_arguments(settings: dict[str, Any], *, stop: bool = False) -> list[s
                 _normalise_recover_hours(str(settings.get("recover_hours", "6"))),
             ]
         )
-    if bool(settings.get("all_sessions")):
+    if "session_types" in settings:
+        selected = _normalise_session_types(settings["session_types"])
+        args.extend(["--session-types", ",".join(selected)])
+    elif bool(settings.get("all_sessions")):
         args.append("--all-sessions")
     if bool(settings.get("include_subagents")):
         args.append("--include-subagents")
@@ -458,8 +489,13 @@ if QT_IMPORT_ERROR is None:
             )
             self.recover = QCheckBox("启动时恢复历史容量错误")
             self.recover.setChecked(bool(self.settings["recover"]))
-            self.all_sessions = QCheckBox("包含 VS Code / exec 会话")
-            self.all_sessions.setChecked(bool(self.settings["all_sessions"]))
+            selected_session_types = set(_normalise_session_types(self.settings.get("session_types")))
+            self.session_checks = {
+                key: QCheckBox(SESSION_TYPE_LABELS[key]) for key in SESSION_TYPE_KEYS
+            }
+            for key, checkbox in self.session_checks.items():
+                checkbox.setChecked(key in selected_session_types)
+                checkbox.setToolTip(f"监控 {SESSION_TYPE_LABELS[key]} 会话的容量错误")
             self.include_subagents = QCheckBox("包含子代理会话")
             self.include_subagents.setChecked(bool(self.settings["include_subagents"]))
             self.dry_run = QCheckBox("仅预览，不实际发送")
@@ -712,7 +748,7 @@ if QT_IMPORT_ERROR is None:
             options_header = QHBoxLayout()
             options_title = QLabel("运行选项")
             options_title.setObjectName("sectionTitle")
-            options_hint = QLabel("按需调整发送内容和扫描范围")
+            options_hint = QLabel("按需调整发送内容、扫描间隔和会话类型")
             options_hint.setObjectName("sectionHint")
             options_header.addWidget(options_title)
             options_header.addSpacing(10)
@@ -730,13 +766,17 @@ if QT_IMPORT_ERROR is None:
             fields.addWidget(self._field_column("恢复时长", self.recover_hours), 1)
             options_layout.addLayout(fields)
 
+            session_label = QLabel("监控会话")
+            session_label.setObjectName("fieldLabel")
+            options_layout.addWidget(session_label)
             checks = QGridLayout()
             checks.setHorizontalSpacing(22)
             checks.setVerticalSpacing(2)
-            checks.addWidget(self.recover, 0, 0)
-            checks.addWidget(self.all_sessions, 0, 1)
-            checks.addWidget(self.include_subagents, 1, 0)
-            checks.addWidget(self.dry_run, 1, 1)
+            for index, key in enumerate(SESSION_TYPE_KEYS):
+                checks.addWidget(self.session_checks[key], index // 2, index % 2)
+            checks.addWidget(self.recover, 2, 0)
+            checks.addWidget(self.include_subagents, 2, 1)
+            checks.addWidget(self.dry_run, 3, 0)
             options_layout.addLayout(checks)
             return options_card
 
@@ -884,6 +924,11 @@ if QT_IMPORT_ERROR is None:
                 raise ValueError("请填写 Codex 主目录")
             if not state_file:
                 raise ValueError("请填写状态文件")
+            session_types = [
+                key for key in SESSION_TYPE_KEYS if self.session_checks[key].isChecked()
+            ]
+            if not session_types:
+                raise ValueError("请至少选择一种监控会话类型")
             return {
                 "codex_home": str(_path(codex_home)),
                 "state_file": str(_path(state_file)),
@@ -892,7 +937,8 @@ if QT_IMPORT_ERROR is None:
                 "interval": _normalise_interval(str(self.interval.value())),
                 "recover_hours": _normalise_recover_hours(str(self.recover_hours.value())),
                 "recover": self.recover.isChecked(),
-                "all_sessions": self.all_sessions.isChecked(),
+                "all_sessions": set(session_types) == set(SESSION_TYPE_KEYS),
+                "session_types": session_types,
                 "include_subagents": self.include_subagents.isChecked(),
                 "dry_run": self.dry_run.isChecked(),
             }

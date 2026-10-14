@@ -26,6 +26,11 @@ from typing import Callable, Iterable
 
 
 CAPACITY_MESSAGE = "Selected model is at capacity. Please try a different model"
+SESSION_TYPE_CLI = "cli"
+SESSION_TYPE_VSCODE = "vscode"
+SESSION_TYPE_DESKTOP = "desktop"
+SESSION_TYPE_EXEC = "exec"
+SESSION_TYPES = (SESSION_TYPE_CLI, SESSION_TYPE_VSCODE, SESSION_TYPE_DESKTOP, SESSION_TYPE_EXEC)
 SESSION_ID_PATTERN = re.compile(
     r"([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})\.jsonl$",
     re.IGNORECASE,
@@ -191,6 +196,36 @@ def discover_rollouts(codex_home: Path) -> Iterable[Path]:
     return sorted(codex_home.joinpath("sessions").glob("**/rollout-*.jsonl"))
 
 
+def session_type(source: str | None, originator: str | None) -> str | None:
+    """Return the user-facing session kind from Codex rollout metadata."""
+    originator_key = str(originator or "").strip().lower()
+    source_key = str(source or "").strip().lower()
+    if originator_key in {"codex-tui", "codex_cli_rs"}:
+        return SESSION_TYPE_CLI
+    if originator_key in {"codex desktop", "chatgpt desktop"}:
+        return SESSION_TYPE_DESKTOP
+    if originator_key in {"codex_exec", "codex-exec", "codex exec"}:
+        return SESSION_TYPE_EXEC
+    if source_key == SESSION_TYPE_EXEC:
+        return SESSION_TYPE_EXEC
+    if source_key == SESSION_TYPE_VSCODE:
+        return SESSION_TYPE_VSCODE
+    if source_key == SESSION_TYPE_CLI:
+        return SESSION_TYPE_CLI
+    return None
+
+
+def parse_session_types(value: str) -> frozenset[str]:
+    selected = frozenset(item.strip().lower() for item in value.split(",") if item.strip())
+    unknown = sorted(selected.difference(SESSION_TYPES))
+    if unknown:
+        choices = ", ".join(SESSION_TYPES)
+        raise argparse.ArgumentTypeError(
+            f"未知会话类型：{', '.join(unknown)}；可选值：{choices}"
+        )
+    return selected
+
+
 def _terminal_session(source: str | None, originator: str | None) -> bool:
     """Keep interactive CLI sessions while excluding editor and exec origins.
 
@@ -204,6 +239,15 @@ def _terminal_session(source: str | None, originator: str | None) -> bool:
     if originator is not None:
         return False
     return source in {None, "cli"}
+
+
+def session_allowed(
+    source: str | None,
+    originator: str | None,
+    selected: frozenset[str],
+) -> bool:
+    """Check whether a session kind is included by an explicit selection."""
+    return session_type(source, originator) in selected
 
 
 def _file_signature(path: Path) -> tuple[int, int] | None:
@@ -423,6 +467,7 @@ class CapacityWatcher:
         dry_run: bool = False,
         terminal_only: bool = True,
         terminal_cwd_provider: Callable[[], set[str] | None] | None = None,
+        session_types: frozenset[str] | None = None,
     ) -> None:
         self.codex_home = codex_home
         self.state_file = state_file
@@ -433,6 +478,7 @@ class CapacityWatcher:
         self.dry_run = dry_run
         self.terminal_only = terminal_only
         self.terminal_cwd_provider = terminal_cwd_provider
+        self.session_types = session_types
         self._terminal_cwds: set[str] | None = None
         self.state = _load_state(state_file)
         self._attempted: dict[str, float] = {}
@@ -552,7 +598,10 @@ class CapacityWatcher:
         return sum(self._handle(event) for event in events)
 
     def _handle(self, event: CapacityEvent) -> int:
-        if self.terminal_only:
+        if self.session_types is not None:
+            if not session_allowed(event.source, event.originator, self.session_types):
+                return 0
+        elif self.terminal_only:
             if self.terminal_cwd_provider:
                 if self._terminal_cwds is not None and event.cwd not in self._terminal_cwds:
                     return 0
@@ -610,7 +659,13 @@ def _parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--all-sessions",
         action="store_true",
-        help="同时监控 VS Code 和 codex exec 会话（默认只监控终端 CLI）",
+        help="监控所有会话类型（兼容旧参数；默认只监控终端 CLI）",
+    )
+    parser.add_argument(
+        "--session-types",
+        type=parse_session_types,
+        metavar="LIST",
+        help="逗号分隔的会话类型：cli、vscode、desktop、exec",
     )
     parser.add_argument("--dry-run", action="store_true", help="只打印，不调用 codex queue")
     parser.add_argument("--once", action="store_true", help="扫描一次后退出")
@@ -640,8 +695,11 @@ def main(argv: list[str] | None = None) -> int:
         recover=args.recover,
         recover_age=timedelta(hours=args.recover_hours),
         dry_run=args.dry_run,
-        terminal_only=not args.all_sessions,
-        terminal_cwd_provider=None if args.all_sessions else discover_terminal_cwds,
+        terminal_only=args.session_types is None and not args.all_sessions,
+        terminal_cwd_provider=(
+            None if args.all_sessions or args.session_types is not None else discover_terminal_cwds
+        ),
+        session_types=args.session_types,
     )
     if args.once:
         watcher.scan()
@@ -659,7 +717,12 @@ def main(argv: list[str] | None = None) -> int:
 
     signal.signal(signal.SIGTERM, request_stop)
     try:
-        mode = "terminal CLI" if not args.all_sessions else "all sessions"
+        if args.session_types is not None:
+            mode = "selected sessions: " + ",".join(
+                session_type_name for session_type_name in SESSION_TYPES if session_type_name in args.session_types
+            )
+        else:
+            mode = "terminal CLI" if not args.all_sessions else "all sessions"
         print(
             f"[watcher] started: {mode}, interval={args.interval:g}s, "
             f"state={args.state_file}, pid={pid}",

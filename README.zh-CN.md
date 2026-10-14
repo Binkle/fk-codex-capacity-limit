@@ -63,11 +63,15 @@ python3 scripts/codex_capacity_watcher.py --stop --pid-file /path/to/capacity-wa
 python3 scripts/codex_capacity_watcher.py --recover --recover-hours 6
 ```
 
-默认只监控终端 CLI 会话。如需同时监控 VS Code 和 `codex exec` 会话：
+默认只监控终端 CLI 会话。也可以按类型选择要监控的会话：
 
 ```bash
-python3 scripts/codex_capacity_watcher.py --all-sessions
+python3 scripts/codex_capacity_watcher.py --session-types cli,vscode,desktop,exec
 ```
+
+可选类型包括 `cli`（终端 Codex TUI）、`vscode`（VS Code）、`desktop`
+（ChatGPT/Codex 桌面端）和 `exec`（`codex exec`）。旧的
+`--all-sessions` 参数仍然可用，会包含全部会话类型。
 
 如需监控子代理会话：
 
@@ -83,10 +87,11 @@ python3 scripts/codex_capacity_watcher.py --help
 
 ## 桌面 GUI
 
-仓库还提供了给非开发人员使用的桌面界面。界面支持点击“开始监控”和
-“停止监控”，设置扫描间隔，选择 Codex 主目录、状态文件和 Codex 程序，
-修改发送内容，选择是否恢复历史、是否包含其他会话，并查看实时日志。
-恢复历史时还可以设置恢复时长。
+仓库还提供了给非开发人员使用的桌面界面。界面使用一个“开始监控/停止监控”
+切换按钮，支持设置扫描间隔，选择 Codex 主目录、状态文件和 Codex 程序，
+修改发送内容，并分别勾选终端 CLI、VS Code、ChatGPT/Codex 桌面端和
+`codex exec`。新安装默认勾选全部四类会话，也可以选择是否恢复历史、是否
+包含子代理，并查看实时日志。
 
 macOS 可以双击 `run-codex-capacity-watcher.command`，Windows 可以双击
 `run-codex-capacity-watcher.bat`。直接运行源码时需要 Python 3.10 及以上，

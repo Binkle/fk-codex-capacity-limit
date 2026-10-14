@@ -63,11 +63,15 @@ Recover sessions that have remained in a capacity-error state during the last si
 python3 scripts/codex_capacity_watcher.py --recover --recover-hours 6
 ```
 
-The default mode monitors terminal CLI sessions. To include VS Code and `codex exec` sessions:
+The default mode monitors terminal CLI sessions. To explicitly select session types, use a comma-separated list:
 
 ```bash
-python3 scripts/codex_capacity_watcher.py --all-sessions
+python3 scripts/codex_capacity_watcher.py --session-types cli,vscode,desktop,exec
 ```
+
+The available types are `cli` (terminal Codex TUI), `vscode` (VS Code),
+`desktop` (ChatGPT/Codex desktop), and `exec` (`codex exec`). The legacy
+`--all-sessions` switch remains supported and includes all session types.
 
 To include subagent sessions:
 
@@ -84,9 +88,11 @@ python3 scripts/codex_capacity_watcher.py --help
 ## Desktop GUI
 
 The repository also includes a desktop interface for users who do not want to
-use a terminal. It provides Start and Stop buttons, a scan-interval field,
-Codex/state-file selectors, the follow-up message, recovery, session filters,
-recovery duration, preview mode, and a live log window.
+use a terminal. It provides a single Start/Stop button, a scan-interval field,
+Codex/state-file selectors, the follow-up message, recovery, independent
+checkboxes for terminal CLI, VS Code, ChatGPT/Codex desktop, and `codex exec`,
+recovery duration, preview mode, and a live log window. All four session types
+are selected in a new installation.
 
 On macOS, double-click `run-codex-capacity-watcher.command`. On Windows,
 double-click `run-codex-capacity-watcher.bat`. The source launcher requires

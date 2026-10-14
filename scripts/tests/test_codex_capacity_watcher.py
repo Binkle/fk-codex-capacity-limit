@@ -14,6 +14,8 @@ from codex_capacity_watcher import (  # noqa: E402
     _parser,
     _release_pid_file,
     queue_message,
+    session_allowed,
+    session_type,
     stop_watcher,
 )
 
@@ -222,6 +224,15 @@ def test_cli_tui_with_vscode_source_is_allowed_by_default(tmp_path):
     watcher = _watcher(home, tmp_path / "state.json", sent, recover=True)
     assert watcher.scan() == 1
     assert sent[0].session_id == session
+
+
+def test_session_types_distinguish_cli_vscode_desktop_and_exec():
+    assert session_type("vscode", "codex-tui") == "cli"
+    assert session_type("vscode", "Codex Desktop") == "desktop"
+    assert session_type("vscode", "Codex VS Code") == "vscode"
+    assert session_type("exec", "codex_exec") == "exec"
+    assert session_allowed("vscode", "codex-tui", frozenset({"cli"}))
+    assert not session_allowed("vscode", "Codex Desktop", frozenset({"cli"}))
 
 
 def test_all_sessions_can_include_vscode_session(tmp_path):

@@ -37,7 +37,24 @@ def test_watcher_arguments_include_gui_options(tmp_path):
     ]
     assert arguments[arguments.index("--interval") + 1] == "0.5"
     assert arguments[arguments.index("--recover-hours") + 1] == "12"
-    assert all(option in arguments for option in ("--recover", "--all-sessions", "--include-subagents", "--dry-run"))
+    assert all(option in arguments for option in ("--recover", "--session-types", "--include-subagents", "--dry-run"))
+    assert arguments[arguments.index("--session-types") + 1] == "cli,vscode,desktop,exec"
+
+
+def test_watcher_arguments_support_selected_session_types(tmp_path):
+    settings = gui.default_settings()
+    settings.update(
+        {
+            "codex_home": str(tmp_path / "codex"),
+            "state_file": str(tmp_path / "state.json"),
+            "session_types": ["cli", "desktop"],
+        }
+    )
+
+    arguments = gui.watcher_arguments(settings)
+
+    assert arguments[arguments.index("--session-types") + 1] == "cli,desktop"
+    assert "--all-sessions" not in arguments
 
 
 def test_stop_arguments_only_use_state_and_pid(tmp_path):
@@ -63,6 +80,21 @@ def test_settings_round_trip(tmp_path):
 
     assert gui.load_settings(path)["interval"] == "3"
     assert gui.load_settings(path)["message"] == "continue"
+
+
+def test_new_defaults_select_all_session_types():
+    settings = gui.default_settings()
+
+    assert settings["session_types"] == list(gui.SESSION_TYPE_KEYS)
+
+
+def test_legacy_settings_migrate_to_session_type_selection(tmp_path):
+    path = tmp_path / "legacy-settings.json"
+    path.write_text('{"all_sessions": false}\n', encoding="utf-8")
+
+    settings = gui.load_settings(path)
+
+    assert settings["session_types"] == ["cli"]
 
 
 def test_invalid_interval_is_rejected():
