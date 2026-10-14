@@ -89,7 +89,7 @@ python3 scripts/codex_capacity_watcher.py --help
 恢复历史时还可以设置恢复时长。
 
 macOS 可以双击 `run-codex-capacity-watcher.command`，Windows 可以双击
-`run-codex-capacity-watcher.bat`。直接运行源码时需要 Python 3.10 及以上并
+`run-codex-capacity-watcher.bat`。直接运行源码时需要 Python 3.10 及以上，
 并安装 PySide6。源码运行前可以执行
 `python3 -m pip install -r requirements-gui.txt`。
 
