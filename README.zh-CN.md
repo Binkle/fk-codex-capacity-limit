@@ -90,7 +90,8 @@ python3 scripts/codex_capacity_watcher.py --help
 
 macOS 可以双击 `run-codex-capacity-watcher.command`，Windows 可以双击
 `run-codex-capacity-watcher.bat`。直接运行源码时需要 Python 3.10 及以上并
-带有 Tkinter，不需要额外的第三方运行时依赖。
+并安装 PySide6。源码运行前可以执行
+`python3 -m pip install -r requirements-gui.txt`。
 
 如果希望交付给完全不需要 Python 的用户，可以在对应系统上构建独立应用：
 

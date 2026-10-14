@@ -90,7 +90,8 @@ recovery duration, preview mode, and a live log window.
 
 On macOS, double-click `run-codex-capacity-watcher.command`. On Windows,
 double-click `run-codex-capacity-watcher.bat`. The source launcher requires
-Python 3.10+ with Tkinter; it does not add a third-party runtime dependency.
+Python 3.10+ with PySide6. Install the GUI dependency with
+`python3 -m pip install -r requirements-gui.txt` when running from source.
 
 To build a standalone application for the current operating system, install
 Python and run the matching build script:
