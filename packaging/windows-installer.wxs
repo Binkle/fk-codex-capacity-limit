@@ -1,5 +1,5 @@
 <Wix xmlns="http://wixtoolset.org/schemas/v4/wxs">
-  <Package Name="Codex Capacity Watcher" Manufacturer="Binkle" Version="0.1.10"
+  <Package Name="Codex Capacity Watcher" Manufacturer="Binkle" Version="0.1.11"
            Language="!(loc.Language)" Codepage="!(loc.Codepage)" Scope="perMachine"
            UpgradeCode="93BD3076-4F30-41C5-84BC-13415EC2DF69" InstallerVersion="500">
     <SummaryInformation Description="Codex Capacity Watcher" />

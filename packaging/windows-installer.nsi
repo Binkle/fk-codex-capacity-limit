@@ -15,16 +15,17 @@ SetCompressor /SOLID lzma
 ShowInstDetails nevershow
 ShowUninstDetails nevershow
 BrandingText " "
-VIProductVersion "0.1.10.0"
+VIProductVersion "0.1.11.0"
 VIAddVersionKey "ProductName" "Codex Capacity Watcher"
 VIAddVersionKey "CompanyName" "Binkle"
 VIAddVersionKey "FileDescription" "Codex capacity watcher"
-VIAddVersionKey "FileVersion" "0.1.10"
+VIAddVersionKey "FileVersion" "0.1.11"
 VIAddVersionKey "LegalCopyright" "Copyright (c) Binkle"
 
 !include "windows-installer-ui.nsh"
 
 Section "Codex Capacity Watcher" SecApplication
+  Call CheckApplicationWritable
   SetOutPath "$INSTDIR"
   File "..${SOURCE_SEPARATOR}dist${SOURCE_SEPARATOR}CodexCapacityWatcher.exe"
   WriteUninstaller "$INSTDIR\Uninstall.exe"
@@ -40,7 +41,7 @@ Section "Codex Capacity Watcher" SecApplication
   WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Codex Capacity Watcher" "DisplayName" "Codex Capacity Watcher"
   WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Codex Capacity Watcher" "UninstallString" '"$INSTDIR\Uninstall.exe"'
   WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Codex Capacity Watcher" "DisplayIcon" "$INSTDIR\CodexCapacityWatcher.exe"
-  WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Codex Capacity Watcher" "DisplayVersion" "0.1.10"
+  WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Codex Capacity Watcher" "DisplayVersion" "0.1.11"
   WriteRegStr HKLM "${ARP_KEY}" "InstallLocation" "$INSTDIR"
   WriteRegStr HKLM "${ARP_KEY}" "Publisher" "Binkle"
   WriteRegStr HKLM "${ARP_KEY}" "QuietUninstallString" '"$INSTDIR\Uninstall.exe" /S'
@@ -54,6 +55,7 @@ Section "Codex Capacity Watcher" SecApplication
 SectionEnd
 
 Section "Uninstall"
+  Call un.CheckApplicationWritable
   Delete "$DESKTOP\Codex Capacity Watcher.lnk"
   Delete "$SMPROGRAMS\Codex Capacity Watcher\Codex Capacity Watcher.lnk"
   RMDir "$SMPROGRAMS\Codex Capacity Watcher"

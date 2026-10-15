@@ -79,6 +79,10 @@ LangString Requires64Bit ${LANG_ENGLISH} "This application requires 64-bit Windo
 LangString Requires64Bit ${LANG_SIMPCHINESE} "此应用需要 64 位 Windows。"
 LangString MsiPresent ${LANG_ENGLISH} "Codex Capacity Watcher was installed using MSI. To update it, use the MSI installer. To switch to EXE, uninstall Codex Capacity Watcher in Windows Settings > Apps > Installed apps, then run this installer again. Your settings and session data will be kept."
 LangString MsiPresent ${LANG_SIMPCHINESE} "当前应用通过 MSI 安装。如需升级，请使用 MSI 安装包。如需改用 EXE，请在 Windows 设置 > 应用 > 已安装的应用中卸载 Codex Capacity Watcher，再运行此安装包。个人设置和会话数据会保留。"
+LangString ApplicationFileBusy ${LANG_ENGLISH} "Setup cannot replace or remove CodexCapacityWatcher.exe.$\r$\n$\r$\nChoose Quit application from the app or system tray menu, then click Retry. Closing the window may leave the app running.$\r$\n$\r$\nIf the app has exited, check access to the installation folder. Cancel leaves the existing installation unchanged."
+LangString ApplicationFileBusy ${LANG_SIMPCHINESE} "安装程序暂时无法替换或移除 CodexCapacityWatcher.exe。$\r$\n$\r$\n请在应用菜单或系统托盘菜单中选择「退出应用」，然后点击「重试」。只关闭主窗口可能仍会在后台运行。$\r$\n$\r$\n若应用已退出，请检查安装目录权限。点击「取消」会保留现有安装。"
+
+!include "windows-installer-files.nsh"
 
 Function .onInit
   ; Follow the Windows display language, not the regional date/number format.
@@ -115,6 +119,7 @@ Function .onInit
     MessageBox MB_ICONSTOP "$(MsiPresent)" /SD IDOK
     Abort
   ${EndIf}
+  Call CheckApplicationWritable
   StrCpy $DesktopShortcut ${BST_CHECKED}
   InitPluginsDir
   File /oname=$PLUGINSDIR\welcome.bmp "${ARTWORK}${SOURCE_SEPARATOR}welcome.bmp"

@@ -155,6 +155,11 @@ or [MSI package](https://github.com/Binkle/fk-codex-capacity-limit/releases/late
 Both install the same application with English and Chinese available in its language selector.
 
 When updating on Windows, use the same installer format as the existing installation.
+First choose **Quit application** from the app or its system-tray menu; closing
+the main window can leave the app running and lock the executable. If EXE setup
+asks you to close the app, quit it and choose **Retry**, or **Cancel** to keep the
+existing installation. Silent EXE setup exits with the Windows file-access error
+code if the executable cannot be replaced, without changing the installation.
 If MSI reports **The EXE edition is already installed**, close the installer,
 uninstall **Codex Capacity Watcher** from **Settings → Apps → Installed apps**,
 then run the MSI again. The same procedure applies when switching from MSI to

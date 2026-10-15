@@ -147,7 +147,11 @@ Windows 安装：下载 [EXE 安装包](https://github.com/Binkle/fk-codex-capac
 或 [MSI 安装包](https://github.com/Binkle/fk-codex-capacity-limit/releases/latest/download/CodexCapacityWatcher-Setup.msi)。
 两种格式安装的是同一个程序，都可以在程序顶部切换中文和英文。
 
-Windows 升级时请使用与现有安装相同的格式。如果 MSI 提示
+Windows 升级时请使用与现有安装相同的格式。先从应用菜单或系统托盘菜单选择
+**退出应用**；只关闭主窗口可能仍在后台运行，导致程序文件被占用。
+EXE 安装向导提示文件被占用时，退出应用后点击**重试**，或点击**取消**保留现有安装。
+静默安装遇到文件无法替换时会返回 Windows 文件访问错误码，不改动现有安装。
+如果 MSI 提示
 **The EXE edition is already installed**，请先关闭安装向导，在
 **设置 → 应用 → 已安装的应用** 中卸载 **Codex Capacity Watcher**，再运行 MSI。
 从 MSI 切换到 EXE 时也按此顺序操作。卸载会保留个人设置和 Codex 会话数据。
