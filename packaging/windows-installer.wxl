@@ -6,7 +6,7 @@
   <String Id="WelcomeHint" Value="Choose Next to select a folder and install." />
   <String Id="FolderLabel" Value="Install folder" />
   <String Id="Downgrade" Value="A newer version is already installed. Uninstall it before installing this version." />
-  <String Id="NsisPresent" Value="The EXE edition is already installed. Uninstall it in Windows Settings before switching to the MSI installer." />
+  <String Id="NsisPresent" Value="Already installed with EXE. To use MSI, uninstall Codex Capacity Watcher in Windows Settings > Apps, then run this MSI again. Settings and session data are kept." />
   <String Id="InstallDirDlgTitle" Value="{\WixUI_Font_Title}Choose where to install" />
   <String Id="InstallDirDlgDescription" Value="Use the suggested folder or choose a different location." />
   <String Id="ExitDialogTitle" Value="{\WixUI_Font_Bigger}All done" />

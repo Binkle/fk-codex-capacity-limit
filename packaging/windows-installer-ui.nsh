@@ -77,8 +77,8 @@ LangString UninstallBody ${LANG_ENGLISH} "Remove the application and its shortcu
 LangString UninstallBody ${LANG_SIMPCHINESE} "移除应用及其快捷方式，保留个人设置和会话数据。"
 LangString Requires64Bit ${LANG_ENGLISH} "This application requires 64-bit Windows."
 LangString Requires64Bit ${LANG_SIMPCHINESE} "此应用需要 64 位 Windows。"
-LangString MsiPresent ${LANG_ENGLISH} "The MSI edition is already installed. Uninstall it in Windows Settings before switching to the EXE installer."
-LangString MsiPresent ${LANG_SIMPCHINESE} "已安装 MSI 版本。请先在 Windows 设置中卸载，再使用 EXE 安装包。"
+LangString MsiPresent ${LANG_ENGLISH} "Codex Capacity Watcher was installed using MSI. To update it, use the MSI installer. To switch to EXE, uninstall Codex Capacity Watcher in Windows Settings > Apps > Installed apps, then run this installer again. Your settings and session data will be kept."
+LangString MsiPresent ${LANG_SIMPCHINESE} "当前应用通过 MSI 安装。如需升级，请使用 MSI 安装包。如需改用 EXE，请在 Windows 设置 > 应用 > 已安装的应用中卸载 Codex Capacity Watcher，再运行此安装包。个人设置和会话数据会保留。"
 
 Function .onInit
   ; Follow the Windows display language, not the regional date/number format.

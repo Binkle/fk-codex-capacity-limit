@@ -2,7 +2,7 @@
   <path fill="#f4f7fb" d="M0 0h164v314H0z"/>
   <rect x="24" y="38" width="116" height="116" rx="18" fill="#fff" stroke="#e3e9f2"/>
   <image x="38" y="50" width="88" height="88" href="APP_ICON_URI"/>
-  <g font-family="Segoe UI, sans-serif" font-size="12" font-weight="600" fill="#172033" text-anchor="middle">
+  <g font-family="Segoe UI" font-size="12" font-weight="600" fill="#172033" text-anchor="middle">
     <text x="82" y="190">Codex Capacity</text><text x="82" y="210">Watcher</text>
   </g>
   <path d="M62 245h40" stroke="#2f80ed" stroke-width="3" stroke-linecap="round"/>

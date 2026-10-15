@@ -147,6 +147,11 @@ Windows 安装：下载 [EXE 安装包](https://github.com/Binkle/fk-codex-capac
 或 [MSI 安装包](https://github.com/Binkle/fk-codex-capacity-limit/releases/latest/download/CodexCapacityWatcher-Setup.msi)。
 两种格式安装的是同一个程序，都可以在程序顶部切换中文和英文。
 
+Windows 升级时请使用与现有安装相同的格式。如果 MSI 提示
+**The EXE edition is already installed**，请先关闭安装向导，在
+**设置 → 应用 → 已安装的应用** 中卸载 **Codex Capacity Watcher**，再运行 MSI。
+从 MSI 切换到 EXE 时也按此顺序操作。卸载会保留个人设置和 Codex 会话数据。
+
 源码启动：macOS 可以双击 `run-codex-capacity-watcher.command`，Windows 可以双击
 `run-codex-capacity-watcher.bat`。直接运行源码时需要 Python 3.10 及以上，
 并安装 PySide6。源码运行前可以执行

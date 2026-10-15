@@ -154,6 +154,12 @@ On Windows, download the [EXE installer](https://github.com/Binkle/fk-codex-capa
 or [MSI package](https://github.com/Binkle/fk-codex-capacity-limit/releases/latest/download/CodexCapacityWatcher-Setup.msi).
 Both install the same application with English and Chinese available in its language selector.
 
+When updating on Windows, use the same installer format as the existing installation.
+If MSI reports **The EXE edition is already installed**, close the installer,
+uninstall **Codex Capacity Watcher** from **Settings → Apps → Installed apps**,
+then run the MSI again. The same procedure applies when switching from MSI to
+EXE. Uninstalling preserves your personal settings and Codex session data.
+
 To run from source, on macOS double-click `run-codex-capacity-watcher.command`. On Windows,
 double-click `run-codex-capacity-watcher.bat`. The source launcher requires
 Python 3.10+ with PySide6. Install the GUI dependency with
