@@ -1,34 +1,71 @@
-# fk-codex-capacity-limit
+# Codex Capacity Watcher
 
 [English](README.md)
 
-当 Codex CLI 因模型容量不足而结束当前任务时，这个脚本会监控本地 rollout 日志，并向原会话自动发送一条后续消息。默认消息是 `continue`，因此可以让会话在容量错误后自动继续处理。
+为因模型容量不足而中断的本地 Codex 会话自动发送续跑消息，支持终端 Codex CLI、VS Code 中的 Codex、Codex/ChatGPT 桌面客户端中的 Codex 会话，以及 `codex exec`。
+
+提供 Windows、macOS 桌面应用，也可以通过命令行运行源码。程序监控本地会话日志，默认通过 `codex queue` 向发生错误的原会话发送 `continue`。
 
 ## 功能
 
 - 监控 `CODEX_HOME/sessions/**/rollout-*.jsonl` 中的新任务完成事件。
 - 只处理容量错误：`Selected model is at capacity. Please try a different model`。
-- 使用 `codex queue --thread <session-id> --message continue` 发送消息，消息会进入发生错误的原会话。
-- 默认只处理终端 CLI 会话，并为每个失败 turn 发送一次。
-- 用状态文件记录已处理事件，重启监控脚本后不会重复发送。
-- 用 PID 文件记录运行中的监控进程，可通过 `--stop` 停止它。
-- 可选恢复启动前最近一段时间内仍停在容量错误的会话。
+- 分别选择终端、VS Code、桌面端和 `codex exec` 会话。
+- 提供中英双语 Windows/macOS 桌面应用、实时日志，以及系统托盘或菜单栏后台监控。
+- 向原会话发送可自定义的续跑消息，每个失败回合只发送一次。
+- 支持仅预览不发送、自定义扫描间隔，以及恢复最近仍停在容量错误的会话。
+- 用状态文件记录读取位置和已发送事件，重启监控后不会重复发送。
+- 可在桌面应用中开始、停止监控，也可通过命令行管理监控进程。
+
+## 支持的会话来源
+
+| 会话来源 | 命令行选项值 |
+| --- | --- |
+| 终端 Codex CLI / TUI | `cli` |
+| VS Code 中的 Codex | `vscode` |
+| Codex/ChatGPT 桌面客户端中的 Codex 会话 | `desktop` |
+| 非交互式 `codex exec` 运行 | `exec` |
+
+桌面应用首次使用时默认勾选全部四类会话；命令行脚本默认只监控终端会话，
+可通过 `--session-types` 选择其他类型。子代理会话默认不包含，可单独启用。
+
+监控范围是所选 `CODEX_HOME/sessions` 目录中的本地 rollout 日志。
+请选择实际存放目标会话的 Codex 主目录，默认使用 `$CODEX_HOME`，未设置时为
+`~/.codex`。桌面端支持指有本地 rollout 日志的 Codex 会话，不包含普通 ChatGPT 对话。
 
 ## 环境要求
 
-- Python 3.10 或更高版本。
-- 已安装并可调用的 Codex CLI，且支持 `codex queue`。
-- Codex CLI 生成的本地 rollout 文件。
+- 要监控的 Codex 会话在本地生成了 rollout 日志。
+- 已安装支持 `codex queue` 的 Codex CLI，用于向所选类型的会话发送续跑消息。
+  可将其加入 `PATH`、在桌面应用中选择程序路径，或在命令行中通过 `--codex` 指定。
+- Release 安装包已包含 Python 运行时和 GUI 依赖，无需另装 Python。
+  仅源码运行需要 Python 3.10 或更高版本，源码 GUI 还需安装 PySide6。
 
-## 使用
+## 下载与开始使用
 
-在仓库根目录运行：
+| 平台 | 下载 |
+| --- | --- |
+| Windows | [EXE 安装包](https://github.com/Binkle/fk-codex-capacity-limit/releases/latest/download/CodexCapacityWatcher-Setup.exe) · [MSI 安装包](https://github.com/Binkle/fk-codex-capacity-limit/releases/latest/download/CodexCapacityWatcher-Setup.msi) |
+| macOS | [DMG 安装包](https://github.com/Binkle/fk-codex-capacity-limit/releases/latest/download/CodexCapacityWatcher-macos.dmg) · [ZIP 压缩包](https://github.com/Binkle/fk-codex-capacity-limit/releases/latest/download/CodexCapacityWatcher-macos.zip) |
+
+1. 运行 Windows 安装包；macOS 打开 DMG 后，将应用拖入 Applications（应用程序）。
+2. 打开 **Codex Capacity Watcher**，在设置中确认 Codex 主目录和 Codex 程序路径。
+3. 勾选要监控的会话类型，点击“开始监控”。如需先观察检测结果而不发送消息，可先启用预览模式。
+
+程序默认跟随系统语言，可在窗口顶部切换中文和英文，每个安装包都包含两种应用语言。
+EXE 安装向导支持中文和英文，统一的 MSI 使用英文安装向导。
+[Releases](https://github.com/Binkle/fk-codex-capacity-limit/releases/latest) 中还提供了
+`SHA256SUMS`，可用于校验下载文件。
+
+## 命令行使用
+
+安装 Python 后，在仓库根目录运行：
 
 ```bash
 python3 scripts/codex_capacity_watcher.py
 ```
 
-默认配置如下：
+命令行脚本的默认配置如下：
 
 | 配置 | 默认值 |
 | --- | --- |
@@ -36,6 +73,7 @@ python3 scripts/codex_capacity_watcher.py
 | 状态文件 | `$CODEX_HOME/capacity-watcher-state.json` |
 | PID 文件 | 状态文件所在目录中的 `capacity-watcher.pid` |
 | Codex 命令 | `$CODEX_BIN`，未设置时为 `codex` |
+| 会话类型 | 仅终端 CLI |
 | 发送内容 | `continue` |
 | 扫描间隔 | 2 秒 |
 
@@ -63,15 +101,14 @@ python3 scripts/codex_capacity_watcher.py --stop --pid-file /path/to/capacity-wa
 python3 scripts/codex_capacity_watcher.py --recover --recover-hours 6
 ```
 
-默认只监控终端 CLI 会话。也可以按类型选择要监控的会话：
+命令行脚本默认只监控终端 CLI 会话。如需监控全部四类会话：
 
 ```bash
 python3 scripts/codex_capacity_watcher.py --session-types cli,vscode,desktop,exec
 ```
 
-可选类型包括 `cli`（终端 Codex TUI）、`vscode`（VS Code）、`desktop`
-（ChatGPT/Codex 桌面端）和 `exec`（`codex exec`）。旧的
-`--all-sessions` 参数仍然可用，会包含全部会话类型。
+也可以只选择部分来源，例如 `--session-types vscode,desktop`。
+旧的 `--all-sessions` 参数仍然可用，会包含全部会话类型。
 
 如需监控子代理会话：
 
@@ -85,9 +122,9 @@ python3 scripts/codex_capacity_watcher.py --include-subagents
 python3 scripts/codex_capacity_watcher.py --help
 ```
 
-## 桌面 GUI
+## 桌面应用
 
-仓库还提供了给非开发人员使用的桌面界面。界面使用一个“开始监控/停止监控”
+桌面应用使用一个“开始监控/停止监控”
 切换按钮，支持设置扫描间隔，选择 Codex 主目录、状态文件和 Codex 程序，
 修改发送内容，并分别勾选终端 CLI、VS Code、ChatGPT/Codex 桌面端和
 `codex exec`。新安装默认勾选全部四类会话，也可以选择是否恢复历史、是否
@@ -115,7 +152,9 @@ Windows 安装：下载 [EXE 安装包](https://github.com/Binkle/fk-codex-capac
 并安装 PySide6。源码运行前可以执行
 `python3 -m pip install -r requirements-gui.txt`。
 
-如果希望交付给完全不需要 Python 的用户，可以在对应系统上构建独立应用：
+## 构建与发布
+
+在对应系统上构建包含 Python 运行时的独立应用：
 
 ```bash
 # macOS
