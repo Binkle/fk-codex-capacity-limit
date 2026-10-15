@@ -206,6 +206,9 @@ macOS 构建使用系统自带的 `hdiutil`、`ditto` 和 `iconutil`，脚本会
 DMG 内含 Applications 快捷入口和中英双语拖拽安装背景；构建结束前会挂载成品，
 检查应用签名、包内符号链接、安装快捷入口和 Finder 窗口布局。
 
+公开分发 macOS 版本前，请按[本机签名与公证说明](docs/macos-signing.md#中文)完成正式验证。
+临时签名的开发包通过完整性校验，并不代表已通过 Apple 公证。
+
 仓库还提供了 `.github/workflows/build-desktop.yml`。在 Actions 页面手动运行会生成构建产物。
 发布新版时，同步修改 `packaging/windows-installer.wxs` 和 `packaging/windows-installer.nsi`
 中的版本号并推送到 `master`；两个平台构建成功后，会自动创建版本标签，并在 Releases

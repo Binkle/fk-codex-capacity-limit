@@ -227,6 +227,9 @@ The macOS build uses the system `hdiutil`, `ditto`, and `iconutil` tools and ins
 drag-to-install background. The build verifies the finished image's app signature,
 bundle symlinks, installation shortcut, and Finder layout before reporting success.
 
+For public macOS distribution, follow the [local signing and notarization guide](docs/macos-signing.md).
+An ad-hoc development build passing the integrity check is not an Apple-notarized release.
+
 The repository also includes a GitHub Actions workflow at
 `.github/workflows/build-desktop.yml`. Manual runs create downloadable Actions
 artifacts. To publish a release, update the matching versions in

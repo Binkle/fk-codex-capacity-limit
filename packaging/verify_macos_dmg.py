@@ -11,6 +11,8 @@ import tempfile
 from ds_store import DSStore
 from mac_alias import Alias
 
+from macos_signing import verify_developer_signature, verify_gatekeeper
+
 
 @contextmanager
 def mounted_image(image: Path):
@@ -32,7 +34,7 @@ def require(condition: bool, message: str) -> None:
         raise RuntimeError(message)
 
 
-def verify_image(image: Path) -> None:
+def verify_image(image: Path, *, team: str | None = None, notarized: bool = False) -> None:
     with mounted_image(image) as mount:
         app = mount / "CodexCapacityWatcher.app"
         link = mount / "Applications"
@@ -47,6 +49,10 @@ def verify_image(image: Path) -> None:
             require(not path.is_symlink() or path.exists(), f"Broken bundle symlink: {path}")
         subprocess.run(["codesign", "--verify", "--deep", "--strict", str(app)],
                        check=True)
+        if team:
+            verify_developer_signature(app, team, application=True)
+        if notarized:
+            verify_gatekeeper(app, application=True)
 
         with DSStore.open(str(mount / ".DS_Store"), "r") as store:
             view = store["."]["icvp"]
@@ -69,4 +75,7 @@ def verify_image(image: Path) -> None:
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("image", type=Path)
-    verify_image(parser.parse_args().image)
+    parser.add_argument("--team", help="Require a Developer ID signature from this team")
+    parser.add_argument("--notarized", action="store_true", help="Require stapling and Gatekeeper acceptance")
+    args = parser.parse_args()
+    verify_image(args.image, team=args.team, notarized=args.notarized)

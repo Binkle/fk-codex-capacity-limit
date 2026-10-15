@@ -6,6 +6,8 @@ PROJECT_ROOT=$(CDPATH= cd -- "$SCRIPT_DIR/.." && pwd)
 cd "$PROJECT_ROOT"
 
 PYTHON_BIN=${PYTHON_BIN:-python3}
+# Check the selected certificate and optional Keychain profile before building.
+"$PYTHON_BIN" packaging/macos_signing.py
 if ! "$PYTHON_BIN" -c 'import PyInstaller, PySide6' >/dev/null 2>&1; then
   "$PYTHON_BIN" -m pip install --upgrade pyinstaller PySide6
 fi
@@ -20,27 +22,5 @@ if [ ! -f "$ICON_FILE" ] || [ ! -f "$ICON_SOURCE" ]; then
   exit 1
 fi
 
-"$PYTHON_BIN" -m PyInstaller \
-  --noconfirm \
-  --clean \
-  --windowed \
-  --name CodexCapacityWatcher \
-  --icon "$ICON_FILE" \
-  --add-data "$ICON_SOURCE:assets" \
-  --hidden-import codex_capacity_watcher \
-  scripts/codex_capacity_watcher_gui.py
-
-# Keep macOS symlinks intact in the distributable archive. Copying the .app
-# with a tool that follows symlinks can expand the Qt/PySide6 payload several
-# times and make a normal build appear to be hundreds of megabytes larger.
-ditto -c -k --sequesterRsrc --keepParent \
-  dist/CodexCapacityWatcher.app \
-  dist/CodexCapacityWatcher-macos.zip
-
-"$PYTHON_BIN" packaging/create_macos_dmg.py \
-  dist/CodexCapacityWatcher.app dist/CodexCapacityWatcher-macos.dmg
-"$PYTHON_BIN" packaging/verify_macos_dmg.py dist/CodexCapacityWatcher-macos.dmg
-
-echo "Built dist/CodexCapacityWatcher.app"
-echo "Built dist/CodexCapacityWatcher-macos.zip"
-echo "Built dist/CodexCapacityWatcher-macos.dmg"
+"$PYTHON_BIN" -m PyInstaller --noconfirm --clean packaging/macos_app.spec
+"$PYTHON_BIN" packaging/package_macos.py
