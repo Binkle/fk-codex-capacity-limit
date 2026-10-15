@@ -109,6 +109,10 @@ quit the previous version from its menu-bar menu before replacing it.
 
 ![macOS drag-to-install window](docs/images/macos-installer.png)
 
+On Windows, download the [EXE installer](https://github.com/Binkle/fk-codex-capacity-limit/releases/latest/download/CodexCapacityWatcher-Setup.exe)
+or [MSI package](https://github.com/Binkle/fk-codex-capacity-limit/releases/latest/download/CodexCapacityWatcher-Setup.msi).
+Both install the same application with English and Chinese available in its language selector.
+
 To run from source, on macOS double-click `run-codex-capacity-watcher.command`. On Windows,
 double-click `run-codex-capacity-watcher.bat`. The source launcher requires
 Python 3.10+ with PySide6. Install the GUI dependency with
@@ -128,12 +132,13 @@ packaging\build-windows.bat
 The macOS build creates an installable
 `dist/CodexCapacityWatcher-macos.dmg`, a distributable
 `dist/CodexCapacityWatcher-macos.zip`, and the app bundle. The Windows build
-creates a guided EXE and two localized Windows Installer packages:
+creates a guided EXE and a single Windows Installer package:
 
 - `dist\CodexCapacityWatcher-Setup.exe`: follows the Windows display language
   (English or Simplified Chinese), with an optional desktop shortcut.
-- `dist\CodexCapacityWatcher-Setup-en-US.msi`: English installation and maintenance UI.
-- `dist\CodexCapacityWatcher-Setup-zh-CN.msi`: Simplified Chinese installation and maintenance UI.
+- `dist\CodexCapacityWatcher-Setup.msi`: English installation and maintenance UI.
+  The installed application follows the system language and supports switching
+  between English and Chinese; no separate language package is needed.
 
 Both formats let you choose the installation folder, create a Start menu shortcut,
 and provide an uninstall entry in Windows Settings. MSI also supports repair and
@@ -157,9 +162,9 @@ only one format. Add `--skip-app` as the second argument to reuse an existing
 `dist\CodexCapacityWatcher.exe` while editing the installer. Normal builds always
 rebuild the application. The editable vector artwork is in `packaging/assets/windows-*.svg`.
 For an unattended MSI install from an elevated terminal, use
-`msiexec /i CodexCapacityWatcher-Setup-en-US.msi /qn /norestart`; pass
+`msiexec /i CodexCapacityWatcher-Setup.msi /qn /norestart`; pass
 `INSTALLFOLDER="C:\Apps\CodexCapacityWatcher"` to choose a directory.
-MSI upgrades, including switching between English and Chinese packages, keep the
+MSI upgrades, including upgrades from the earlier English or Chinese packages, keep the
 existing installation folder unless you explicitly choose another one. Uninstalling
 either format preserves your personal settings and session data.
 
@@ -169,8 +174,13 @@ drag-to-install background. The build verifies the finished image's app signatur
 bundle symlinks, installation shortcut, and Finder layout before reporting success.
 
 The repository also includes a GitHub Actions workflow at
-`.github/workflows/build-desktop.yml`. Run it manually from the Actions tab, or
-push a `v*` tag, to produce downloadable macOS and Windows artifacts.
+`.github/workflows/build-desktop.yml`. Manual runs create downloadable Actions
+artifacts. To publish a release, update the matching versions in
+`packaging/windows-installer.wxs` and `packaging/windows-installer.nsi`, then push
+to `master`. Once both builds pass, the workflow creates the version tag and
+publishes the EXE, MSI, macOS DMG/ZIP, and `SHA256SUMS` under Releases. A version
+already tagged at a different commit is left unchanged. Pushing a matching `v*`
+tag also publishes a release; retrying that build replaces its release assets.
 
 ## How it works
 

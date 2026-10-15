@@ -106,6 +106,10 @@ macOS 安装：从 [Releases](https://github.com/Binkle/fk-codex-capacity-limit/
 
 ![macOS 拖拽安装窗口](docs/images/macos-installer.png)
 
+Windows 安装：下载 [EXE 安装包](https://github.com/Binkle/fk-codex-capacity-limit/releases/latest/download/CodexCapacityWatcher-Setup.exe)
+或 [MSI 安装包](https://github.com/Binkle/fk-codex-capacity-limit/releases/latest/download/CodexCapacityWatcher-Setup.msi)。
+两种格式安装的是同一个程序，都可以在程序顶部切换中文和英文。
+
 源码启动：macOS 可以双击 `run-codex-capacity-watcher.command`，Windows 可以双击
 `run-codex-capacity-watcher.bat`。直接运行源码时需要 Python 3.10 及以上，
 并安装 PySide6。源码运行前可以执行
@@ -123,11 +127,11 @@ packaging\build-windows.bat
 
 macOS 构建结果包括可双击安装的 `dist/CodexCapacityWatcher-macos.dmg`、
 可分发的 `dist/CodexCapacityWatcher-macos.zip` 和应用本体；Windows 构建结果是
-以下三种安装包：
+以下两种安装包：
 
 - `dist\CodexCapacityWatcher-Setup.exe`：跟随 Windows 显示语言，支持中文和英文，可选择创建桌面快捷方式。
-- `dist\CodexCapacityWatcher-Setup-zh-CN.msi`：中文安装与维护界面。
-- `dist\CodexCapacityWatcher-Setup-en-US.msi`：英文安装与维护界面。
+- `dist\CodexCapacityWatcher-Setup.msi`：统一使用英文安装与维护界面。
+  程序默认跟随系统语言，安装后可切换中文和英文，无需选择不同语言的安装包。
 
 两种格式都支持选择安装目录、创建开始菜单快捷方式，并在 Windows 设置中提供卸载入口。
 MSI 还支持修复与标准 `msiexec` 静默部署。请选择一种格式；切换 EXE 与 MSI 前先卸载旧版本。
@@ -145,18 +149,20 @@ MSI 构建会自动恢复固定版本的 WiX 5.0.2 及其 UI 扩展。
 只构建一种格式可运行 `packaging\build-windows.bat exe` 或 `packaging\build-windows.bat msi`。
 调整安装页面时，可在第二个参数添加 `--skip-app`，复用已有应用 EXE；正常构建会重新打包应用。
 可编辑的矢量素材位于 `packaging/assets/windows-*.svg`。
-在管理员终端中运行 `msiexec /i CodexCapacityWatcher-Setup-zh-CN.msi /qn /norestart` 可静默安装，
+在管理员终端中运行 `msiexec /i CodexCapacityWatcher-Setup.msi /qn /norestart` 可静默安装，
 添加 `INSTALLFOLDER="C:\Apps\CodexCapacityWatcher"` 可指定目录。
-MSI 覆盖升级（包括中英文包之间切换）会保留原安装目录，除非明确指定新位置。
+MSI 覆盖升级（包括从之前的中文或英文包升级）会保留原安装目录，除非明确指定新位置。
 两种格式卸载时都会保留个人设置和会话数据。
 
 macOS 构建使用系统自带的 `hdiutil`、`ditto` 和 `iconutil`，脚本会自动安装 `dmgbuild`。
 DMG 内含 Applications 快捷入口和中英双语拖拽安装背景；构建结束前会挂载成品，
 检查应用签名、包内符号链接、安装快捷入口和 Finder 窗口布局。
 
-仓库还提供了 `.github/workflows/build-desktop.yml`。可以在 GitHub 的
-Actions 页面手动运行它，或者推送 `v*` 标签，生成可下载的 macOS 和
-Windows 应用构建产物。
+仓库还提供了 `.github/workflows/build-desktop.yml`。在 Actions 页面手动运行会生成构建产物。
+发布新版时，同步修改 `packaging/windows-installer.wxs` 和 `packaging/windows-installer.nsi`
+中的版本号并推送到 `master`；两个平台构建成功后，会自动创建版本标签，并在 Releases
+发布 EXE、MSI、macOS DMG/ZIP 和 `SHA256SUMS`。若该版本已指向其他提交，会保留原发布内容。
+也可以推送与安装包版本一致的 `v*` 标签来发布；重跑同一版本构建会更新它的发布附件。
 
 ## 工作方式
 

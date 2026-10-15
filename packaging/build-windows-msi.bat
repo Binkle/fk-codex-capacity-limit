@@ -32,17 +32,18 @@ set "WATCHER_MSI_STAGE=%TEMP%\codex-capacity-msi-%RANDOM%-%RANDOM%"
 if exist "%WATCHER_MSI_STAGE%" exit /b 1
 mkdir "%WATCHER_MSI_STAGE%"
 if errorlevel 1 exit /b 1
-for %%L in (en-US zh-CN) do (
-  echo [build] Building MSI: %%L
-  call :wix build packaging\windows-installer.wxs packaging\windows-installer-ui.wxs ^
-    -arch x64 -culture %%L -loc packaging\windows-installer.%%L.wxl ^
-    -ext "%WATCHER_WIX_UI%" -intermediatefolder "%WATCHER_MSI_STAGE%\%%L" ^
-    -o "%WATCHER_MSI_STAGE%\CodexCapacityWatcher-Setup-%%L.msi"
-  if errorlevel 1 goto failed
-  if not exist "%WATCHER_MSI_STAGE%\CodexCapacityWatcher-Setup-%%L.msi" goto failed
-  copy /y "%WATCHER_MSI_STAGE%\CodexCapacityWatcher-Setup-%%L.msi" "dist\CodexCapacityWatcher-Setup-%%L.msi" >nul
-  if errorlevel 1 goto failed
-)
+echo [build] Building MSI
+call :wix build packaging\windows-installer.wxs packaging\windows-installer-ui.wxs ^
+  -arch x64 -culture en-US -loc packaging\windows-installer.wxl ^
+  -ext "%WATCHER_WIX_UI%" -intermediatefolder "%WATCHER_MSI_STAGE%\obj" ^
+  -o "%WATCHER_MSI_STAGE%\CodexCapacityWatcher-Setup.msi"
+if errorlevel 1 goto failed
+if not exist "%WATCHER_MSI_STAGE%\CodexCapacityWatcher-Setup.msi" goto failed
+copy /y "%WATCHER_MSI_STAGE%\CodexCapacityWatcher-Setup.msi" "dist\CodexCapacityWatcher-Setup.msi" >nul
+if errorlevel 1 goto failed
+rem Remove superseded build outputs so the distribution contains one MSI.
+if exist "dist\CodexCapacityWatcher-Setup-en-US.msi" del /q "dist\CodexCapacityWatcher-Setup-en-US.msi"
+if exist "dist\CodexCapacityWatcher-Setup-zh-CN.msi" del /q "dist\CodexCapacityWatcher-Setup-zh-CN.msi"
 rmdir /s /q "%WATCHER_MSI_STAGE%"
 exit /b 0
 
