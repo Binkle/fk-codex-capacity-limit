@@ -18,6 +18,7 @@ from PySide6.QtWidgets import QApplication, QMessageBox
 
 import codex_capacity_watcher_gui_config as config
 import codex_capacity_watcher_gui_window as gui
+import codex_capacity_watcher_paths as paths
 from codex_capacity_watcher_process import pid_is_running
 
 
@@ -201,3 +202,50 @@ def test_external_stop_timeout_restores_window_for_retry(window, monkeypatch):
     assert not window.lifecycle.exiting
     assert window.toggle_button.isEnabled()
     assert errors
+
+
+def test_auto_detect_button_fills_paths_without_starting_or_saving(window, tmp_path, monkeypatch):
+    home = tmp_path / "detected"
+    (home / "sessions").mkdir(parents=True)
+    state = home / "capacity-watcher-state-v2.json"
+    state.write_text('{"queued":{"existing":"timestamp"}}')
+    original = state.read_bytes()
+    monkeypatch.setenv("CODEX_HOME", str(home))
+    window.codex_home.clear()
+    window.state_file.clear()
+    window._show_page(1)
+    window.detect_button.click()
+    assert window.codex_home.text() == str(home)
+    assert window.state_file.text() == str(state)
+    assert "existing state file" in window.path_detection_hint.text()
+    assert state.read_bytes() == original
+    assert not (tmp_path / "gui.json").exists()
+    assert window.process is None
+
+
+def test_auto_detect_failure_keeps_form_values(window, monkeypatch):
+    original = (window.codex_home.text(), window.state_file.text())
+    monkeypatch.setattr(gui, "discover_paths", lambda *args: None)
+    window.detect_button.click()
+    assert (window.codex_home.text(), window.state_file.text()) == original
+    assert "No local Codex data found" in window.path_detection_hint.text()
+
+
+def test_detection_is_disabled_while_worker_uses_selected_home(window, app):
+    start_worker(window)
+    assert not window.detect_button.isEnabled()
+    assert window.process.processEnvironment().value("CODEX_HOME") == window.settings["codex_home"]
+    run_until_quit(app, window.tray.quit_action.trigger)
+
+
+def test_language_refresh_reconnects_the_detection_button(window, tmp_path, monkeypatch):
+    home = tmp_path / "detected"
+    (home / "sessions").mkdir(parents=True)
+    found = paths.DetectedPaths(home, home / "state.json", True)
+    monkeypatch.setattr(gui, "discover_paths", lambda *args: found)
+    window.language = "zh-CN"
+    window._rebuild_ui()
+    assert window.detect_button.text() == "自动检测"
+    window.detect_button.click()
+    assert window.codex_home.text() == str(home)
+    assert "已检测并填入路径" in window.path_detection_hint.text()

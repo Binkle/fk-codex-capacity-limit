@@ -136,6 +136,16 @@ python3 scripts/codex_capacity_watcher.py --help
 取消“关闭主窗口后继续后台运行”，关闭按钮就会退出应用；系统托盘不可用时，
 关闭按钮也会退出应用。
 
+运行设置会自动填入默认主目录和状态文件，也可以点击“连接配置”右侧的
+“自动检测”重新查找。检测优先保留当前有效目录，再检查 `CODEX_HOME` 和
+用户目录下的 `.codex`（macOS 为 `~/.codex`，Windows 为 `%USERPROFILE%\.codex`）。
+已有状态文件和自定义状态路径会被保留；首次使用会在启动监控时创建状态文件。
+检测本身不会启动监控，保存设置或下次开始监控时生效。
+
+ChatGPT 桌面端的**本地 Codex 会话**也使用这套配置层，勾选桌面端会话即可一起监控。
+普通 ChatGPT 聊天和云端 Work 不在本工具的本地监控范围内。
+参见 [OpenAI 配置说明](https://learn.chatgpt.com/docs/developer-settings)。
+
 macOS 安装：从 [Releases](https://github.com/Binkle/fk-codex-capacity-limit/releases/latest)
 下载并双击 `.dmg`，在安装窗口中把左侧 **CodexCapacityWatcher** 拖到右侧
 **Applications（应用程序）** 文件夹。等待复制完成，从“应用程序”打开应用，

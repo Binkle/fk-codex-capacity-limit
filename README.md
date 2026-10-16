@@ -142,6 +142,18 @@ monitoring and exit (also available from the application menu and via ⌘Q on ma
 To exit when closing the window, turn off **Keep running after closing the main
 window** in Settings. If the system tray is unavailable, closing exits the app.
 
+Default home and state-file paths are filled automatically. Click **Auto-detect**
+under **Connection** to check them again: a valid current directory takes priority,
+followed by `CODEX_HOME` and the user's `.codex` directory (`~/.codex` on macOS,
+`%USERPROFILE%\.codex` on Windows). Existing state files and custom state paths are
+preserved; a new state file is created when monitoring starts. Detection does not
+start monitoring. Save settings or start monitoring to apply the detected paths.
+
+**Local Codex sessions in ChatGPT desktop** use the same configuration layers and
+can be monitored with the desktop session type selected. Regular ChatGPT chats
+and cloud Work sessions are outside this local watcher's scope.
+See the [official OpenAI configuration documentation](https://learn.chatgpt.com/docs/developer-settings).
+
 On macOS, download the `.dmg` from [Releases](https://github.com/Binkle/fk-codex-capacity-limit/releases/latest)
 and double-click it. In the installation window, drag **CodexCapacityWatcher**
 onto the **Applications** folder on the right. Wait for the copy to finish,

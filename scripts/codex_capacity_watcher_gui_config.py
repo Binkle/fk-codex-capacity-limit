@@ -13,6 +13,7 @@ from codex_capacity_watcher_i18n import (
     normalize_language,
     system_language,
 )
+from codex_capacity_watcher_paths import default_codex_home, default_state_file, discover_paths
 
 
 APP_TITLE = "Codex Capacity Watcher"
@@ -21,16 +22,6 @@ SETTINGS_FILE = Path.home() / ".codex" / "capacity-watcher-gui.json"
 LANGUAGE_FILE = Path.home() / ".codex" / "capacity-watcher-language.json"
 SCRIPT_PATH = Path(__file__).with_name("codex_capacity_watcher_gui.py")
 SESSION_TYPE_KEYS = ("cli", "vscode", "desktop", "exec")
-
-
-def default_codex_home() -> Path:
-    return Path(os.environ.get("CODEX_HOME", Path.home() / ".codex")).expanduser()
-
-
-def default_state_file(codex_home: Path | None = None) -> Path:
-    home = codex_home or default_codex_home()
-    v2 = home / "capacity-watcher-state-v2.json"
-    return v2 if v2.exists() else home / "capacity-watcher-state.json"
 
 
 def default_codex_executable() -> str:
@@ -45,7 +36,8 @@ def default_codex_executable() -> str:
 
 
 def default_settings() -> dict[str, Any]:
-    codex_home = default_codex_home()
+    detected = discover_paths()
+    codex_home = detected.codex_home if detected is not None else default_codex_home()
     return {
         "codex_home": str(codex_home),
         "state_file": str(default_state_file(codex_home)),
@@ -86,9 +78,13 @@ def load_settings(path: Path | None = None) -> dict[str, Any]:
         return settings
     if not isinstance(value, dict):
         return settings
+    detected_home = settings["codex_home"]
     for key in settings:
         if key in value:
             settings[key] = value[key]
+    settings["codex_home"] = str(settings.get("codex_home") or "").strip() or detected_home
+    if not str(value.get("state_file") or "").strip():
+        settings["state_file"] = str(default_state_file(path_value(settings["codex_home"])))
     if "session_types" not in value:
         settings["session_types"] = list(SESSION_TYPE_KEYS) if bool(settings["all_sessions"]) else ["cli"]
     settings["session_types"] = normalise_session_types(settings["session_types"])

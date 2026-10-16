@@ -42,6 +42,7 @@ from codex_capacity_watcher_gui_theme import APP_STYLESHEET
 from codex_capacity_watcher_gui_tray import TrayController
 from codex_capacity_watcher_gui_lifecycle import ApplicationLifecycle
 from codex_capacity_watcher_process import pid_is_running
+from codex_capacity_watcher_paths import discover_paths
 
 
 class CapacityWatcherWindow(QMainWindow):
@@ -108,6 +109,8 @@ class CapacityWatcherWindow(QMainWindow):
         self.toggle_button.clicked.connect(self._toggle_watcher)
         self.save_button = QPushButton(self.t("settings.save"))
         self.save_button.clicked.connect(self._save)
+        self.detect_button = QPushButton(self.t("settings.paths.detect"))
+        self.detect_button.clicked.connect(self._detect_paths)
         self.status = QLabel()
         self.log = QPlainTextEdit()
         self.log.setReadOnly(True)
@@ -220,6 +223,21 @@ class CapacityWatcherWindow(QMainWindow):
         self._append_log(self.t("log.saved", path=str(SETTINGS_FILE)))
         return True
 
+    def _detect_paths(self) -> None:
+        if self.running_settings is not None or self.stop_process is not None:
+            return
+        found = discover_paths(self.codex_home.text(), self.state_file.text())
+        if found is None:
+            self.path_detection_hint.setText(self.t("settings.paths.not_found"))
+            return
+        self.codex_home.setText(str(found.codex_home))
+        self.state_file.setText(str(found.state_file))
+        state_key = "settings.paths.state_existing" if found.state_exists else "settings.paths.state_new"
+        message = self.t("settings.paths.found") + " " + self.t(state_key)
+        if not found.has_sessions:
+            message += " " + self.t("settings.paths.no_sessions")
+        self.path_detection_hint.setText(message)
+
     def _watcher_pid(self, settings: dict[str, Any]) -> int | None:
         pid_file = path_value(str(settings["state_file"])).with_name("capacity-watcher.pid")
         try:
@@ -295,6 +313,7 @@ class CapacityWatcherWindow(QMainWindow):
         process.setArguments(command[1:])
         process_environment = QProcessEnvironment.systemEnvironment()
         process_environment.insert("PATH", runtime_path(str(settings.get("codex", ""))))
+        process_environment.insert("CODEX_HOME", str(path_value(str(settings["codex_home"]))))
         process.setProcessEnvironment(process_environment)
         self.process = process
         process.start()
@@ -326,6 +345,7 @@ class CapacityWatcherWindow(QMainWindow):
         process.setArguments(command[1:])
         process_environment = QProcessEnvironment.systemEnvironment()
         process_environment.insert("PATH", runtime_path(str(settings.get("codex", ""))))
+        process_environment.insert("CODEX_HOME", str(path_value(str(settings["codex_home"]))))
         process.setProcessEnvironment(process_environment)
         self.stop_process = process
         process.start()
@@ -355,6 +375,7 @@ class CapacityWatcherWindow(QMainWindow):
                 text = self.t("status.exited", code=self.status_error_code or "?")
         self.status.setText(text)
         self.status.setProperty("state", state)
+        self.detect_button.setEnabled(state != "running" and self.stop_process is None)
         style = self.status.style()
         style.unpolish(self.status)
         style.polish(self.status)

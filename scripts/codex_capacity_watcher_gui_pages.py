@@ -237,6 +237,7 @@ def build_paths_card(host: UiHost) -> QFrame:
     header.addSpacing(10)
     header.addWidget(section_hint(host.t("settings.paths.hint")))
     header.addStretch(1)
+    header.addWidget(host.detect_button)
     layout.addLayout(header)
 
     fields = QGridLayout()
@@ -251,6 +252,9 @@ def build_paths_card(host: UiHost) -> QFrame:
     fields.addWidget(field_label(host.t("field.codex")), 2, 0)
     fields.addWidget(path_widget(host, host.codex, executable=True), 2, 1)
     layout.addLayout(fields)
+    host.path_detection_hint = section_hint(host.t("settings.paths.shared"))
+    host.path_detection_hint.setWordWrap(True)
+    layout.addWidget(host.path_detection_hint)
     return paths_card
 
 
